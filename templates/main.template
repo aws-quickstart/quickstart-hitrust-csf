@@ -1,0 +1,220 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Main template for deploying example HITRUST CSF Quick Start
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    ParameterLabels:
+
+Parameters:
+  QSS3BucketName:
+    AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-.]*[0-9a-zA-Z])*$
+    ConstraintDescription: Quick Start bucket name can include numbers, lowercase
+      letters, uppercase letters, periods (.), and hyphens (-). It cannot start or
+      end with a hyphen (-).
+    Default: aws-quickstart
+    Description: S3 bucket name for the Quick Start assets. Quick Start bucket name
+      can include numbers, lowercase letters, uppercase letters, and hyphens (-).
+      It cannot start or end with a hyphen (-).
+    Type: String
+  QSS3KeyPrefix:
+    AllowedPattern: ^[0-9a-zA-Z-/]*$
+    ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
+      uppercase letters, hyphens (-), and forward slash (/).
+    Default: quickstart-hitrust-csf/
+    Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
+      can include numbers, lowercase letters, uppercase letters, hyphens (-), and
+      forward slash (/).
+    Type: String
+
+Mappings:
+  Networking:
+    ProductionCIDR:
+      Private1A: 10.100.0.0/20
+      Private1B: 10.100.16.0/20
+      Private2A: 10.100.32.0/20
+      Private2B: 10.100.48.0/20
+      Public1: 10.100.100.0/24
+      Public2: 10.100.101.0/24
+      VPC: 10.100.0.0/16
+    ManagementCIDR:
+      Private1A: 10.101.0.0/20
+      Private1B: 10.101.16.0/20
+      Private2A: 10.101.32.0/20
+      Private2B: 10.101.48.0/20
+      Public1: 10.101.100.0/24
+      Public2: 10.101.101.0/24
+      VPC: 10.101.0.0/16
+  AWSAMIRegionMap:
+    AMI:
+      AMZNLINUX2HVM: amzn2-ami-hvm-2.0.20190618-x86_64-gp2 
+    ap-east-1:
+      AMZNLINUX2HVM: ami-570c7726
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    ap-northeast-1:
+      AMZNLINUX2HVM: 
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    ap-northeast-1:
+      AMZNLINUX2HVM: ami-0c3fd0f5d33134a76
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    ap-northeast-2:
+      AMZNLINUX2HVM: ami-095ca789e0549777d
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    ap-northeast-3:
+      AMZNLINUX2HVM: ami-0ee933a7f81beb045
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    ap-south-1:
+      AMZNLINUX2HVM: ami-0d2692b6acea72ee6
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    ap-southeast-1:
+      AMZNLINUX2HVM: ami-01f7527546b557442
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    ap-southeast-2:
+      AMZNLINUX2HVM: ami-0dc96254d5535925f
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    ca-central-1:
+      AMZNLINUX2HVM: ami-0d4ae09ec9361d8ac
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    eu-central-1:
+      AMZNLINUX2HVM: ami-0cc293023f983ed53
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    eu-north-1:
+      AMZNLINUX2HVM: ami-3f36be41 
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    eu-west-1:
+      AMZNLINUX2HVM: ami-0bbc25e23a7640b9b
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    eu-west-2:
+      AMZNLINUX2HVM: ami-0d8e27447ec2c8410
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    eu-west-3:
+      AMZNLINUX2HVM: ami-0adcddd3324248c4c
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    sa-east-1:
+      AMZNLINUX2HVM: ami-058943e7d9b9cabfb
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m3.large
+    us-east-1:
+      AMZNLINUX2HVM: ami-0b898040803850657
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    us-east-2:
+      AMZNLINUX2HVM: ami-0d8f6eb4f641ef691
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    us-gov-east-1:
+      AMZNLINUX2HVM: ami-a2d938d3
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m3.large
+    us-gov-west-1:
+      AMZNLINUX2HVM: ami-e9a9d388
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m3.large
+    us-west-1:
+      AMZNLINUX2HVM: ami-056ee704806822732
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+    us-west-2:
+      AMZNLINUX2HVM: ami-082b5a644766e0e6f
+      InstanceType: m5.large
+      InstanceTypeDatabase: db.m5.large
+  
+
+Conditions:
+  GovCloudCondition: !Or [ !Equals [ !Ref AWS::Region, us-gov-west-1], !Equals [ !Ref AWS::Region, us-gov-east-1]]
+  
+Resources:
+  IamTemplate:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+  
+  LoggingTemplate:
+    Type: AWS::CloudFormationStack
+    Properties:
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/logging.template
+  
+  ProductionVpc:
+    Type: AWS::CloudFormationStack
+    DependsOn:
+    - Logging Template
+    Properties:
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template
+      Parameters:
+        AvailabilityZones: !Join [ "," , !Ref pAvailabilityZones ]
+        CreateAdditionalPrivateSubnets: true
+        CreatePrivateSubnets: true
+        KeyPairName: !Ref pEC2KeyPairBastion
+        NATInstanceType: !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", InstanceType ]
+        NumberOfAZs: 2
+        PrivateSubnet1ACIDR: !FindInMap [ Networking, ProductionCIDR, Private1A ]
+        PrivateSubnet1BCIDR: !FindInMap [ Networking, ProductionCIDR, Private1B ]
+        PrivateSubnet2ACIDR: !FindInMap [ Networking, ProductionCIDR, Private2A ]
+        PrivateSubnet2BCIDR: !FindInMap [ Networking, ProductionCIDR, Private2B ]
+        PublicSubnet1CIDR: !FindInMap [ Networking, ProductionCIDR, Public1 ]
+        PublicSubnet2CIDR: !FindInMap [ Networking, ProductionCIDR, Public2 ]
+        VPCCIDR: !FindInMap [ Networking, ProductionCIDR, VPC ]
+  
+  ManagementVpc:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: 
+    - LoggingTemplate
+    Properties:
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template
+      Parameters:
+        AvailabilityZones: !Join [ "," , !Ref pAvailabilityZones ]
+        CreateAdditionalPrivateSubnets: true
+        CreatePrivateSubnets: true
+        KeyPairName: !Ref pEC2KeyPairBastion
+        NATInstanceType: !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", InstanceType ]
+        NumberOfAZs: 2
+        PrivateSubnet1ACIDR: !FindInMap [ Networking, ManagementCIDR, Private1A ]
+        PrivateSubnet1BCIDR: !FindInMap [ Networking, ManagementCIDR, Private1B ]
+        PrivateSubnet2ACIDR: !FindInMap [ Networking, ManagementCIDR, Private2A ]
+        PrivateSubnet2BCIDR: !FindInMap [ Networking, ManagementCIDR, Private2B ]
+        PublicSubnet1CIDR: !FindInMap [ Networking, ManagementCIDR, Public1 ]
+        PublicSubnet2CIDR: !FindInMap [ Networking, ManagementCIDR, Public2 ]
+        VPCCIDR: !FindInMap [ Networking, ManagementCIDR, VPC ]
+
+  VpcNetworking:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+    - ManagementVpc
+    - ProductionVpc
+    Properties:
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/vpc-networking.template
+      Parameters:
+        ProductionVpcId: !GetAtt ProductionVpc.Outputs.VPCID
+        ProductionVpcCidr: !GetAtt ProductionVpc.Outputs.VPCCIDR
+        ProductionRouteTablePrivateA: !GetAtt ProductionVpc.Outputs.PrivateSubnet1ARouteTable
+        ProductionRouteTablePrivateB: !GetAtt ProductionVpc.Outputs.PrivateSubnet2ARouteTable
+        ProductionRouteTablePublic: !GetAtt ProductionVpc.Outputs.PublicSubnetRouteTable
+        ManagementVpcId: !GetAtt ManagementVpc.Outputs.VPCID
+        ManagementVpcCidr: !GetAtt ManagementVpc.Outputs.VPCCIDR
+        ManagementRouteTablePrivateA: !GetAtt ManagementVpc.Outputs.PrivateSubnet1ARouteTable
+        ManagementRouteTablePrivateB: !GetAtt ManagementVpc.Outputs.PrivateSubnet2ARouteTable
+        ManagementRouteTablePublic: !GetAtt ManagementVpc.Outputs.PublicSubnetRouteTable
+
+
+  ApplicationTemplate:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: 
+    - ProductionVpcTemplate
+    Properties:
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/application.template
+      Parameters:
+
+Outputs:

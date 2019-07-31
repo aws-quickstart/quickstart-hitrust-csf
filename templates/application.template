@@ -1,0 +1,427 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Provides nesting for required stacks to deploy a full sample web application
+  with reverse proxy, ELBs, IAM, and other resources (for demonstration/POC/testing)
+  QS(5026)
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    ParameterLabels:
+
+Parameters:
+  LogBucket:
+    Type: String
+    Description: Bucket to write logs to
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Public subnets in your VPC
+  SourceCidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
+    Description: IP address/range to allow access from
+    Type: String
+  SSLCertificateARN:
+    Type: String
+    Default: ""
+    Description: The Amazon Resource Name for the existing SSL cert you wish to use; empty for none
+  VpcCidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
+    Type: String
+    Description: VPC CIDR
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Amazon VPC ID
+Mappings:
+  Defaults:
+    Elb:
+      HealthCheckGracePeriod: 300
+      LogLocation: hitrust-qs-elb-logs
+      
+    Storage:
+      ArchiveTier: GLACIER
+
+Conditions:
+  NoSSLCertificate: !Equals [ '', !Ref SSLCertificateARN ]
+
+Resources:
+  # If no SSL Certificate provided, create one
+  ConfigureSSLStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: NoSSLCertificate
+    Properties:
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/acm-route53.yaml
+      Parameters:
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        DomainName: !Ref AWSPublicFQDN
+        HostedZoneID: !Ref AWSHostedZoneID
+
+  # ELB in DMZ
+  Elb:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: application
+      LoadBalancerAttributes:
+      - Key: access_logs.s3.enabled
+        Value: true
+      - Key: access_logs.s3.bucket
+        Value: !Ref LogBucket
+      - Key: access_logs.s3.prefix
+        Value: !FindInMap [ Defaults, Elb, LogLocation ]
+      Scheme: internet-facing
+      SecurityGroups:
+      - !Ref ElbSecurityGroup
+      Subnets: !Ref PublicSubnetIds
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
+  ElbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ELB Security Group for HITRUST CSF Quick Start
+      SecurityGroupEgress:
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: !Ref VpcCidr
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: !Ref SourceCidr
+      Tags:
+        - Key: !Ref QSTagKey
+          Value: !Ref QSTagValue
+      VpcId: !Ref VpcId
+  ElbListenerHTTPS:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+    - Elb
+    - ElbTargetGroupHTTPS
+    Properties:
+      Certificates: 
+        - CertificateArn: !If [ NoSSLCertificate, !GetAtt ConfigureSSLStack.Outputs.ACMCertificate, !Ref SSLCertificateARN ]
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref ElbTargetGroupHTTPS
+      LoadBalancerArn: !Ref Elb
+      Port: 443
+      Protocol: HTTPS
+  ElbTargetGroupHTTPS:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 5
+      Port: 443
+      Protocol: HTTPS
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
+      VpcId: !Ref VpcId
+
+  RecordAlias:
+    Type: AWS::Route53::RecordSet
+    DependsOn:
+    - Elb
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt Elb.DNSName
+        HostedZoneId: !GetAtt Elb.CanonicalHostedZoneID
+      HostedZoneId: !Ref AWSHostedZoneID
+      Name: !Ref AWSPublicFQDN
+      Type: A
+
+  # Should we have an expiration?
+  # Enforce default object encryption
+  WebContentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketEncryption: 
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+        - Id: Transition90daysRetain7yrs
+          Status: Enabled
+          ExpirationInDays: 2555
+          Transition:
+            TransitionInDays: 90
+            StorageClass: !FindInMap [ Defaults, Storage, ArchiveTier ]
+      VersioningConfiguration:
+        Status: Enabled
+  WebContentS3Policy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn: WebContentBucket
+    Properties:
+      Bucket: !Ref WebContentBucket
+      PolicyDocument:
+        Statement:
+        - Sid: EnforceSecureTransport
+          Action: s3:*
+          Effect: Deny
+          Principal: '*'
+          Resource:
+            !Sub
+            - arn:${Partition}:s3:::${WebContentBucket}
+            - Partition: !If [ GovCloudCondition, aws-us-gov, aws ]
+          Condition:
+            Bool:
+              aws:SecureTransport: 'false'
+        - Sid: EnforceEncryptionOnPut
+          Effect: Deny
+          Principal: '*'
+          Action: s3:PutObject
+          Resource:
+            !Sub
+            - arn:${Partition}:s3:::${WebContentBucket}/*
+            - Partition: !If [ GovCloudCondition, aws-us-gov, aws ]
+          Condition:
+            StringNotEquals:
+              s3:x-amz-server-side-encryption: AES256
+
+  # Configure MySQL Database
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Port 3306 database for access
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 3306
+        ToPort: 3306
+        SourceSecurityGroupId: !Ref SecurityGroupAppInstance
+      Tags:
+      - Key: Name
+        Value: sg-database-access
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: MySQL RDS Subnet Group
+      SubnetIds: !Ref DBPrivateSubnets
+  DBMySQL:
+    Type: AWS::RDS::DBInstance
+    DependsOn:
+    - DBSubnetGroup
+    - DBSecurityGroup
+    Properties:
+      AllocatedStorage: !Ref DBAllocatedStorage
+      DBInstanceClass: !Ref DBInstanceClass
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      EnableIAMDatabaseAuthentication: true
+      Engine: MySQL
+      MultiAZ: true
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      MasterUsername: !Ref DBMasterUser
+      MasterPassword: !Ref DBPassword
+      VPCSecurityGroups:
+      - !Ref DBSecurityGroup
+
+
+  # Launch configuration
+  AppLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    DependsOn:
+    - DBMySQL
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          wordpress_install:
+          - install_cfn
+          - install_wordpress
+        install_cfn:
+          files:
+            /etc/cfn/cfn-hup.conf:
+              content: !Sub |
+                [main]
+                stack=${AWS::StackId}
+                region=${AWS::Region}
+              mode: '000400'
+              owner: root
+              group: root
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.rAutoScalingConfigApp.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource AppASG --configsets wordpress_install --region ${AWS::Region}
+              mode: '000400'
+              owner: root
+              group: root
+          services:
+            sysvinit:
+              cfn-hup:
+                enabled: true
+                ensureRunning: true
+                files:
+                - /etc/cfn/cfn-hup.conf
+                - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+        install_wordpress:
+          packages:
+            yum:
+              php: []
+              php-mysql: []
+              mysql: []
+              httpd: []
+          sources:
+            /var/www/html: https://wordpress.org/latest.tar.gz
+          files:
+            /tmp/httpd/ssl.conf:
+              content: |
+                Listen 443
+                <VirtualHost *:443>
+                DocumentRoot /var/www/html
+                LoadModule ssl_module /etc/httpd/modules/mod_ssl.so
+                SSLEngine on
+                SSLCertificateFile /etc/ssl/certs/common.crt
+                SSLCertificateKeyFile /etc/ssl/private/common.key
+                </VirtualHost>
+              mode: '000755'
+              owner: root
+              group: root
+            /var/www/html/wordpress/wp-config.php:
+              content: !Sub |
+                <?php
+                define('DB_NAME', '${DBName}');
+                define('DB_USER', '${DBUser}');
+                define('DB_PASSWORD', '${DBPassword}');
+                define('DB_HOST', '${DBMySQL.Endpoint.Address}');
+                define('FORCE_SSL_ADMIN', true);
+                if (strpos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false) { $_SERVER['HTTPS']='on'; }
+                define('DB_CHARSET', 'utf8');
+                define('DB_COLLATE', '');
+
+                $table_prefix = 'wp_';
+                define('WP_DEBUG', false);
+
+                if ( !defined('ABSPATH') )
+                  define('ABSPATH', dirname(__FILE__) . '/');
+
+                require_once(ABSPATH . 'wp-settings.php');
+              mode: '000644'
+              owner: root
+              group: root
+          services:
+            sysvinit:
+              httpd:
+                enabled: true
+                ensureRunning: true
+    Properties:
+      ImageId: !Ref AppImageId
+      IamInstanceProfile: !Ref AppInstanceProfile
+      InstanceType: !Ref AppInstanceType
+      BlockDeviceMappings:
+      - DeviceName: /dev/xvda
+        Ebs:
+          VolumeSize: 50
+          VolumeType: gp2
+          Encrypted: true
+#      - DeviceName: /dev/sdh
+#        Ebs: 
+#          VolumeSize: 50
+#          VolumeType: gp2
+#          Encrypted: true
+      SecurityGroups:
+      - !Ref AppSecurityGroup
+      UserData:
+        Fn::Base64: 
+          !Sub 
+          - |
+            #!/bin/bash -x
+            set -e
+
+            yum update -y && yum install -y mod_ssl
+
+            aws configure set default.s3.signature_version s3v4
+            aws configure set region ${AWS::Region}
+
+            # Tag volumes
+            EC2_INSTANCE_ID=$(curl -s http://instance-data/latest/meta-data/instance-id)
+            DISK_IDS=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values=$EC2_INSTANCE_ID --query 'Volumes[*].[VolumeId]' --region=${AWS::Region} --out "text" | cut -f 1)
+            aws ec2 create-tags --resources $DISK_IDS --tags Key=${QSTagKey},Value=${QSTagValue} --region ${AWS::Region}
+
+            # Create SSL cert
+            echo Generating self-signed certificate
+            openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/common.key -out /etc/ssl/certs/common.crt -subj "/C=US/ST=Washington/L=Seattle/O=NonProductionTestCert/CN=NonProductionTestCert"
+
+            ######################################################################
+            # Volume /dev/sdh (which will get created as /dev/xvdh on Amazon Linux)
+
+            #DATA_STATE="unknown"
+            #until [ "${!DATA_STATE}" == "attached" ]; do
+            #  DATA_STATE=$(aws ec2 describe-volumes \
+            #  --region ${AWS::Region} \
+            #  --filters \
+            #        Name=attachment.instance-id,Values=${!EC2_INSTANCE_ID} \
+            #        Name=attachment.device,Values=/dev/sdh \
+            #  --query Volumes[].Attachments[].State \
+            #  --output text)
+
+            #  sleep 5
+            #done
+
+            # Format /dev/xvdh if it does not contain a partition yet
+            #if [ "$(file -b -s /dev/xvdh)" == "data" ]; then
+            #  mkfs -t ext4 /dev/xvdh
+            #fi
+
+            #mkdir -p /data
+            #mount /dev/xvdh /data
+
+            # Persist the volume in /etc/fstab so it gets mounted again
+            #echo '/dev/xvdh /data ext4 defaults,nofail 0 2' >> /etc/fstab
+
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource AppASG --configsets wordpress_install --region ${AWS::Region}
+
+            cp /tmp/httpd/ssl.conf /etc/httpd/conf.d/ssl.conf
+            service httpd restart
+
+            ######################################################################
+            #     NOTE: UPDATE THESE VALUES ACCORDING TO THE COMPLIANCE BODY     #
+            ######################################################################
+            LANDING_PAGE="/var/www/html/landing.html"
+            COMPLIANCE_BODY_LABEL="HITRUST"
+            COMPLIANCE_SURVEY_LINK="hitrust"
+            COMPLIANCE_MATRIX_FILENAME="HITRUST-CSF-Security-Controls-Mapping.xlsx"
+            ######################################################################
+
+            # Download the landing page.
+            sudo wget https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}assets/landing/landing.html -O $LANDING_PAGE
+
+            # Replace relative image links with links to the production S3 source.
+            sudo sed -i 's|images|https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}assets/landing/images|g' $LANDING_PAGE
+
+            # Inject the landing page branding label.
+            sudo sed -i "s|{compliance-body}|$COMPLIANCE_BODY_LABEL|g" $LANDING_PAGE
+
+            # Inject the survey link parameter.
+            sudo sed -i "s|{compliance-body-survey-link}|$COMPLIANCE_SURVEY_LINK|g" $LANDING_PAGE
+
+            # Inject the security control matrix file location.
+            sudo sed -i "s|{compliance-body-matrix}|https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}assets/$COMPLIANCE_MATRIX_FILENAME|g" $LANDING_PAGE
+
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource AppASG --region ${AWS::Region}
+          - QSS3Region: !If [ GovCloudEastCondition, s3-us-gov-east-1, !If [ GovCloudWestCondition, s3-us-gov-west-1, s3 ] ]
+
+  AppASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    DependsOn: AppLaunchConfig
+    Properties:
+      HealthCheckGracePeriod: !FindInMap [ Defaults, Elb, HealthCheckGracePeriod ]
+      HealthCheckType: ELB
+      MinSize: 2
+      MaxSize: 4
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
+        PropagateAtLaunch: true
+      TargetGroupARNs: !Ref ElbTargetGroups
+      VPCZoneIdentifier: !Ref PrivateSubnetAppIds
+      CreationPolicy:
+        ResourceSignal:
+          Count: 1
+          Timeout: PT15M

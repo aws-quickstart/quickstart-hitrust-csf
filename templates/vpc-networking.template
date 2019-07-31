@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Set up VPC peering between VPCs
+Parameters:
+  ProductionVpcId:
+    Type: AWS::EC2::VPC::Id
+  ProductionVpcCidr: 
+    Type: String
+  ProductionRouteTablePrivateA: 
+    Type: String
+  ProductionRouteTablePrivateB: 
+    Type: String
+  ProductionRouteTablePublic: 
+    Type: String
+  ManagementVpcId: 
+    Type: AWS::EC2::VPC::Id
+  ManagementVpcCidr: 
+    Type: String
+  ManagementRouteTablePrivateA: 
+    Type: String
+  ManagementRouteTablePrivateB: 
+    Type: String
+  ManagementRouteTablePublic: 
+    Type: String
+
+Mappings:
+  VpcPeering:
+    Tags:
+      Name: vpc-peering-hitrust-csf-quickstart
+
+Resources:
+  VpcPeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      PeerVpcId: !Ref ProductionVpcId
+      VpcId: !Ref ManagementVpcId
+      Tags:
+      - Key: Name
+        Value: !FindInMap [ VpcPeering, Tags, Name ]
+  RouteManagementProductionPrivateA:
+    Type: AWS::EC2::Route
+    DependsOn: VpcPeeringConnection
+    Properties:
+      RouteTableId: !Ref ManagementRouteTablePrivateA
+      VpcPeeringConnectionId: !Ref VpcPeeringConnection
+      DestinationCidrBlock: !Ref ProductionVpcCidr
+  RouteManagementProductionPrivateB:
+    Type: AWS::EC2::Route
+    DependsOn: VpcPeeringConnection
+    Properties:
+      RouteTableId: !Ref ManagementRouteTablePrivateB
+      VpcPeeringConnectionId: !Ref VpcPeeringConnection
+      DestinationCidrBlock: !Ref ProductionVpcCidr
+  RouteManagementProductionPublic:
+    Type: AWS::EC2::Route
+    DependsOn: VpcPeeringConnection
+    Properties:
+      RouteTableId: !Ref ManagementRouteTablePublic
+      VpcPeeringConnectionId: !Ref VpcPeeringConnection
+      DestinationCidrBlock: !Ref ProductionVpcCidr
+  RouteProductionManagementPrivateA:
+    Type: AWS::EC2::Route
+    DependsOn: VpcPeeringConnection
+    Properties:
+      RouteTableId: !Ref ManagementRouteTablePrivateA
+      VpcPeeringConnectionId: !Ref VpcPeeringConnection
+      DestinationCidrBlock: !Ref ManagementVpcCidr
+  RouteProductionManagementPrivateB:
+    Type: AWS::EC2::Route
+    DependsOn: VpcPeeringConnection
+    Properties:
+      RouteTableId: !Ref ManagementRouteTablePrivateB
+      VpcPeeringConnectionId: !Ref VpcPeeringConnection
+      DestinationCidrBlock: !Ref ManagementVpcCidr
+  RouteProductionManagementPublic:
+    Type: AWS::EC2::Route
+    DependsOn: VpcPeeringConnection
+    Properties:
+      RouteTableId: !Ref ManagementRouteTablePrivateA
+      VpcPeeringConnectionId: !Ref VpcPeeringConnection
+      DestinationCidrBlock: !Ref ManagementVpcCidr
+  
+Outputs:
+  VpcPeeringConnectionId:
+    Value: !Ref VpcPeeringConnection
+    Description: VPC Peering Connection between management and production VPCs

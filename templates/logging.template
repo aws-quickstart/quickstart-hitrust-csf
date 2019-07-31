@@ -1,0 +1,241 @@
+---
+  AWSTemplateFormatVersion: '2010-09-09'
+  Description: CloudFormation Template for basic logging functionality. Sets up ELB logging and Config if 
+    the Config Recorder and Config Delivery Channel are not yet set up.
+  
+  Parameters:
+    ConfigRecorderName:
+      Type: String
+      Default: ""
+      Description: Config Recorder. Empty string will create a new Config Recorder.
+    ConfigDeliveryChannelName:
+      Type: String
+      Default: ""
+      Description: Config Delivery Channel. Must have if Config Recorder specified.
+    QSS3BucketName:
+      AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+      ConstraintDescription: Quick Start bucket name can include numbers, lowercase
+        letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen
+        (-).
+      Default: aws-quickstart
+      Description: S3 bucket name for the Quick Start assets. This string can include
+        numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start
+        or end with a hyphen (-).
+      Type: String
+    QSS3KeyPrefix:
+      AllowedPattern: "^[0-9a-zA-Z-/]*$"
+      ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
+        uppercase letters, hyphens (-), and forward slash (/).
+      Default: quickstart-tableau-server-healthcare/
+      Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
+        can include numbers, lowercase letters, uppercase letters, hyphens (-), and
+        forward slash (/).
+      Type: String
+    QSTagKey:
+      Type: String
+      Description: Tag key to identify resources from this Quick Start
+    QSTagValue:
+      Type: String
+      Description: Tag value to identify resources from this Quick Start
+  
+  Mappings: # Fill in more
+    ElbLogging:
+      us-east-1: 
+        Principal: '127311923021'
+      us-east-2: 
+        Principal: '033677994240'
+      us-west-1: 
+        Principal: '027434742980'
+      us-west-2: 
+        Principal: '797873946194'
+      ca-central-1:
+        Principal: '985666609251'
+      eu-central-1:
+        Principal: '054676820928'
+      eu-west-1:
+        Principal: '156460612806'
+      eu-west-2:
+        Principal: '652711504416'
+      eu-west-3:
+        Principal: '009996457667'
+      ap-northeast-1:
+        Principal: '582318560864'
+      ap-northeast-2:
+        Principal: '600734575887'
+      ap-southeast-1:
+        Principal: '114774131450'
+      ap-southeast-2:
+        Principal: '783225319266'
+      ap-south-1:
+        Principal: '718504428378'
+      sa-east-1:
+        Principal: '507241528517'
+  
+Conditions:
+  CreateConfig: !And [ !Equals [ !Ref ConfigRecorderName, '' ], !Equals [ !Ref ConfigDeliveryChannelName, '' ] ]
+
+Resources:
+  LogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption: 
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
+      VersioningConfiguration:
+        Status: Enabled
+      
+  LogBucketPolicy:
+    DependsOn: CleanupLogBucket
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LogBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Id: DeleteObjectPolicy
+        Statement:
+        - Sid: DenyDeleteObject
+          Effect: Deny
+          Principal: "*"
+          Action: "s3:DeleteObject"
+          Resource: !Sub arn:aws:s3:::${LogBucket}/*
+        - Sid: DenyDeleteBucket
+          Effect: Deny
+          Principal: "*"
+          Action: "s3:DeleteBucket"
+          Resource: !Sub arn:aws:s3:::${LogBucket}
+        - Sid: ElbLogs
+          Effect: Allow
+          Principal:
+            AWS:
+            - !FindInMap [ ElbLogging, !Ref "AWS::Region" , Principal ]
+          Action: "s3:PutObject"
+          Resource: !Sub arn:aws:s3:::${LogBucket}/*
+        
+  CleanupLogBucket:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+    - CleanupRole
+    Properties:
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/clean-bucket.yaml
+      Parameters:
+        Bucket: !Ref LogBucket
+        ServiceToken: !GetAtt CleanupRole.Arn
+
+  CleanupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: ConfigPolicy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Sid: Logging
+            Effect: Allow
+            Action: logs:*
+            Resource: '*'
+          - Sid: S3Bucket
+            Effect: Allow
+            Action: s3:*
+            Resource:
+            - !GetAtt LogBucket.Arn
+            - !Sub arn:aws:s3:::${LogBucket}/*
+
+  ConfigRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: ConfigRolePolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action:
+          - s3:PutObject
+          Resource: !Sub arn:aws:s3:::${LogBucket}/config*
+          Condition:
+            StringLike:
+              s3:x-amz-acl: bucket-owner-full-control
+        - Effect: Allow
+          Action:
+          - lambda:InvokeFunction
+          Resource: "*"
+        - Effect: Allow
+          Action:
+          - "config:Put*"
+          Resource: "*"
+        - Effect: Allow
+          Action:
+          - SNS:Publish
+          Resource: "*"
+      Roles:
+      - !Ref ConfigRole
+
+  ConfigSNS:
+    Type: AWS::SNS::Topic
+    Condition: CreateConfig
+
+  ConfigSNSPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Condition: CreateConfig
+    DependsOn: ConfigSNS
+    Properties:
+      PolicyDocument:
+        Id: ConfigSNSPolicy
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS: [ !GetAtt ConfigRole.Arn ]
+          Action: SNS:Publish
+          Resource: !Ref ConfigSNS
+      Topics:
+      - !Ref ConfigSNS
+
+  ConfigRecorder:
+    Type: AWS::Config::ConfigurationRecorder
+    Condition: CreateConfig
+    Properties:
+      RecordingGroup:
+        AllSupported: true
+        IncludeGlobalResourceTypes: true
+      RoleARN: !GetAtt ConfigRole.Arn
+
+  ConfigDeliveryChannel:
+    Type: AWS::Config::DeliveryChannel
+    Condition: CreateConfig
+    Properties:
+      ConfigSnapshotDeliveryProperties:
+        DeliveryFrequency: One_Hour
+      S3BucketName: !Ref LogBucket
+      S3KeyPrefix: "config"
+      SnsTopicARN: !Ref ConfigSNS
+
+  ConfigRulesStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+    - ConfigRole
+    - ConfigRolePolicy
+    Properties:
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/config-rules.yaml
+      Parameters:
+        ConfigRecorder: !If [ CreateConfig, !Ref ConfigRecorder, !Ref ConfigRecorderName ]
+        ConfigDeliveryChannel: !If [ CreateConfig, !Ref ConfigDeliveryChannel, !Ref ConfigDeliveryChannelName ]
+        LogBucketName: !Ref LogBucket
+        QSTagKey: !Ref QSTagKey
+        QSTagValue: !Ref QSTagValue
+
+Outputs:
+  LogBucket:
+    Value: !Ref LogBucket
+    Description: Logging bucket for HITRUST CST Quick Start
