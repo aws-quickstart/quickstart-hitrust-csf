@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Creates Database for WordPress instance
+
+Parameters:
+  DBInstanceClass:
+    Type: String
+  DBMasterUser:
+    Type: String
+  DBPassword:
+    Type: String
+    NoEcho: true
+  DBPrivateSubnets:
+    Type: String # Replace
+  SecurityGroupAppInstance:
+    Type: String # Replace with hardened
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Amazon VPC ID
+
+Mappings:
+  RDS:
+    SecurityGroup:
+      Name: sg-database-access
+    Defaults:
+      Engine: MySQL
+      AllocatedStorage: 50
+
+Resources:
+  # Configure MySQL Database
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Port 3306 database for access
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 3306
+        ToPort: 3306
+        SourceSecurityGroupId: !Ref SecurityGroupAppInstance
+      Tags:
+      - Key: Name
+        Value: !FindInMap [ RDS, SecurityGroup, Name ]
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: MySQL RDS Subnet Group
+      SubnetIds: !Ref DBPrivateSubnets
+  DBMySQL:
+    Type: AWS::RDS::DBInstance
+    DependsOn:
+    - DBSubnetGroup
+    - DBSecurityGroup
+    Properties:
+      AllocatedStorage: !FindInMap [ RDS, Defaults, AllocatedStorage]
+      DBInstanceClass: !Ref DBInstanceClass
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      EnableIAMDatabaseAuthentication: true
+      Engine: !FindInMap [ RDS, Defaults, Engine]
+      MultiAZ: true
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      MasterUsername: !Ref DBMasterUser
+      MasterPassword: !Ref DBPassword
+      VPCSecurityGroups:
+      - !Ref DBSecurityGroup
+
+Outputs:
+  EndpointAddress:
+    Value: !GetAtt DBMySQL.Endpoint.Address
+  Port:
+    Value: !GetAtt DBMySQL.Endpoint.Port
