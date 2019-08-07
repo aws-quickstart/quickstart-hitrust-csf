@@ -10,9 +10,10 @@ Parameters:
     Type: String
     NoEcho: true
   DBPrivateSubnets:
-    Type: String # Replace
+    Type: List<AWS::EC2::Subnet::Id>
   SecurityGroupAppInstance:
-    Type: String # Replace with hardened
+    Description: App Instance Security Group
+    Type: AWS::EC2::SecurityGroup::Id
   VpcId:
     Type: AWS::EC2::VPC::Id
     Description: Amazon VPC ID
@@ -54,7 +55,6 @@ Resources:
       AllocatedStorage: !FindInMap [ RDS, Defaults, AllocatedStorage]
       DBInstanceClass: !Ref DBInstanceClass
       DBSubnetGroupName: !Ref DBSubnetGroup
-      EnableIAMDatabaseAuthentication: true
       Engine: !FindInMap [ RDS, Defaults, Engine]
       MultiAZ: true
       PubliclyAccessible: false
@@ -65,7 +65,13 @@ Resources:
       - !Ref DBSecurityGroup
 
 Outputs:
+  DBName:
+    Description: Database instance name
+    Value: !Ref DBMySQL
   EndpointAddress:
+    Description: Database endpoint address
     Value: !GetAtt DBMySQL.Endpoint.Address
   Port:
+    Description: Database port
     Value: !GetAtt DBMySQL.Endpoint.Port
+

@@ -43,6 +43,9 @@ Mappings:
       ArchiveTier: GLACIER
     WebContent:
       Logging: web-content/
+  Database:
+    Defaults:
+      User: hitrust-example-db-user
 
 Conditions:
   GovCloudContition: !Or [ !Equals [ !Ref AWS::Region, 'us-gov-west-1'], !Equals [ !Ref AWS::Region, 'us-gov-east-1'] ]
@@ -53,7 +56,6 @@ Resources:
   # Create the Elb
   ElbStack:
     Type: AWS::CloudFormation::Stack
-    DependsOn: LogStack
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/encrypted-elb.yaml
       Parameters:
@@ -68,6 +70,35 @@ Resources:
         SourceCIDR: !Ref SourceCIDR
         SSLCertificateARN: !Ref SSLCertificateARN
         VpcCidr: !Ref VpcCidr
+        VpcId: !Ref VpcId
+
+  AppInstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTPS from the load balancer only
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        SourceSecurityGroupId: !GetAtt ElbStack.Outputs.ElbSecurityGroup
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Sub ${QSTagValue}-${AWS::StackName}
+      VpcId: !Ref VpcId
+
+  # Configure Database
+  AppDatabase:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+    - AppInstanceSecurityGroup
+    Properties:
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/database.template
+      Properties:
+        DBInstanceClass: !Ref DBInstanceClass
+        DBMasterUser: !FindInMap [ Database, Defaults, User]
+        DBPassword: !Ref DBPassword
+        DBPrivateSubnets: !Ref PrivateSubnetDBIds
+        SecurityGroupAppInstance: !Ref AppInstanceSecurityGroup
         VpcId: !Ref VpcId
 
   WebContentBucket:
@@ -119,22 +150,38 @@ Resources:
           Condition:
             StringNotEquals:
               s3:x-amz-server-side-encryption: AES256
-
-  # Configure Database
-  AppDatabase:
-    Type: AWS::CloudFormation::Stack
-    DependsOn:
-    - SecurityGroupAppInstance
+  
+  AppInstanceRole:
+    Type: AWS::IAM::Role
     Properties:
-      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/database.template
-      Properties:
-        DBInstanceClass: !Ref DBInstanceClass
-        DBMasterUser: !Ref DBMasterUser
-        DBPassword: !Ref DBPassword
-        DBPrivateSubnets: !Ref PrivateSubnetDBIds
-        SecurityGroupAppInstance: !Ref SecurityGroupAppInstance
-        VpcId: !Ref VpcId
-      
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: S3Assets
+        Policies:
+          - PolicyName: CreateTags
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+              - Effect: Allow
+                Action:
+                - ec2:Describe*
+                - ec2:CreateTags
+                Resource: "*"
+  AppInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roels:
+      - !Ref AppInstanceRole
+  
   # Launch configuration
   AppLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -215,6 +262,7 @@ Resources:
                   define('ABSPATH', dirname(__FILE__) . '/');
 
                 require_once(ABSPATH . 'wp-settings.php');
+                # Need find in map for user
               mode: '000644'
               owner: root
               group: root

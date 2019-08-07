@@ -1,0 +1,110 @@
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates R53 records and ACM Certificate.
+
+Parameters:
+  QSS3BucketName:
+    AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription: Quick Start bucket name can include numbers, lowercase
+      letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen
+      (-).
+    Default: aws-quickstart
+    Description: S3 bucket name for the Quick Start assets. This string can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start
+      or end with a hyphen (-).
+    Type: String
+  QSS3KeyPrefix:
+    AllowedPattern: "^[0-9a-zA-Z-/]*$"
+    ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
+      uppercase letters, hyphens (-), and forward slash (/).
+    Default: ''
+    Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
+      can include numbers, lowercase letters, uppercase letters, hyphens (-), and
+      forward slash (/).
+    Type: String
+  HostedZoneID:
+    Description: Route 53 Hosted Zone ID to use. If left blank, Route 53
+      will not be configured and DNS must be setup manually. If you specify this,
+      you must also specify DomainName
+    Type: String
+    MaxLength: 32
+  DomainName:
+    Description: Domain Name configured for the cluster.
+    Type: String
+Resources:
+  CopyLambdaStack:
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/copy-lambdas.yaml
+      Parameters:
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+  ACMCertificateRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Path: "/"
+      Policies:
+      - PolicyName: lambda-acm
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - acm:RequestCertificate
+            - acm:DescribeCertificate
+            - acm:DeleteCertificate
+            Resource:
+            - "*"
+          - Effect: Allow
+            Action:
+            - lambda:InvokeFunction
+            Resource:
+            - "*"
+          - Effect: Allow
+            Action:
+            - route53:ChangeResourceRecordSets
+            Resource:
+            - !Sub arn:aws:route53:::hostedzone/${HostedZoneID}
+          - Effect: Allow
+            Action:
+            - logs:FilterLogEvents
+            Resource:
+            - "*"
+  ACMCertificateLambda:
+    Type: AWS::Lambda::Function
+    DependsOn: CopyLambdaStack
+    Properties:
+      Description: Creates and verifies an ACM certificate using DNS validation and Route53
+      Handler: lambda_function.handler
+      Runtime: python3.7
+      Role: !GetAtt ACMCertificateRole.Arn
+      Timeout: 600
+      Code:
+        S3Bucket: !GetAtt CopyLambdaStack.Outputs.LambdaZipsBucket
+        S3Key: !Sub "${QSS3KeyPrefix}functions/packages/ACMCert/lambda.zip"
+  ACMCertificateDNS:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt ACMCertificateLambda.Arn
+      HostedZoneId: !Ref HostedZoneID
+      HostNames:
+      - !Ref DomainName
+      - !Sub '*.${DomainName}'
+
+Outputs:
+  ACMCertificate:
+    Description: ARN of the ACM-Generated SSL Certificate
+    Value: !GetAtt ACMCertificateDNS.Arn
+  LambdaZipsBucket:
+    Value: !GetAtt CopyLambdaStack.Outputs.LambdaZipsBucket
+    Description: Bucket of Lambda Artifacts
+  

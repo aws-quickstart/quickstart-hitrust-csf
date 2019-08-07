@@ -132,7 +132,7 @@ Resources:
     Properties:
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 3
+      HealthyThresholdCount: 2
       UnhealthyThresholdCount: 5
       Port: 443
       Protocol: HTTPS

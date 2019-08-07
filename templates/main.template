@@ -1,12 +1,79 @@
+# - master
+#   - iam
+#   - logging
+#     - config rules
+#   - application
+#     - encrypted elb
+#       - copy lambda
+#       - configure ssl
+#       - acm/route53
+#     - database
+
 AWSTemplateFormatVersion: 2010-09-09
 Description: Main template for deploying example HITRUST CSF Quick Start
 
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
+    - Label:
+        default: Logging Configuration
+      Parameters:
+      - ConfigRecorder
+      - ConfigDeliveryChannel
+    - Label:
+        default: Server DNS configuration
+      Parameters:
+      - AWSPublicFQDN
+      - AWSHostedZoneID
+      - SSLCertificateARN
+    - Label:
+        default: AWS Quick Start Configuration
+      Parameters:
+      - QSS3BucketName
+      - QSS3KeyPrefix
+      - QSTagKey
+      - QSTagValue
     ParameterLabels:
+      ConfigRecorder:
+        default: AWS Config Recorder ARN
+      ConfigDeliveryChannel:
+        default: AWS Config Delivery Channel ARN
+      DBPassword:
+        default: Database Password
+      DBUser:
+        default: Database User
+      QSS3BucketName:
+        default: Quick Start S3 Bucket Name
+      QSS3KeyPrefix:
+        default: Quick Start S3 Key Prefix
 
 Parameters:
+  AWSHostedZoneID:
+    Description: DNS Zone ID to contain the server's DNS entry.
+    Type: AWS::Route53::HostedZone::Id
+  AWSPublicFQDN:
+    Description: Tableau Server portal will be reachable at this address.
+    Type: String
+  ConfigRecorder:
+    Type: String
+    Default: ""
+    Description: Config Recorder in your AWS Region. Leaving empty will try to create a new recorder.
+  ConfigDeliveryChannel:
+    Type: String
+    Default: ""
+    Description: Config Delivery Channel in your AWS Region. Leaving empty will try to create a new recorder. Required if you specify Config Recorder
+  DBPassword:
+    Description: Mixed alphanumeric and must be between 8 and 28 characters and contain
+      at least one capital letter
+    NoEcho: true
+    Type: String
+    MinLength: 8
+    MaxLength: 28
+    AllowedPattern: '[a-zA-Z0-9!^*\-_+]*'
+    ConstraintDescription: Can only contain alphanumeric characters or the following
+      special characters !^*-_+, between 8 and 28 characters
+
+
   QSS3BucketName:
     AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-.]*[0-9a-zA-Z])*$
     ConstraintDescription: Quick Start bucket name can include numbers, lowercase
@@ -53,7 +120,7 @@ Mappings:
       InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     ap-northeast-1:
-      AMZNLINUX2HVM: 
+      AMZNLINUX2HVM: ami-0ebe863c3d16bca9d
       InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     ap-northeast-1:
@@ -138,15 +205,28 @@ Conditions:
   GovCloudCondition: !Or [ !Equals [ !Ref AWS::Region, us-gov-west-1], !Equals [ !Ref AWS::Region, us-gov-east-1]]
   
 Resources:
-  IamTemplate:
+  # Need to create
+  Iam:
     Type: AWS::CloudFormation::Stack
     Properties:
-  
-  LoggingTemplate:
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/iam.template
+      Parameters:
+        QSTagKey: !Ref QSTagKey
+        QSTagValue: !Sub ${QSTagValue}-${AWS::StackName}
+
+  # Need Config Rules
+  Logging:
     Type: AWS::CloudFormationStack
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/logging.template
-  
+      Parameters:
+        ConfigRecorderName: !Ref ConfigRecorder
+        ConfigDeliveryChannelName: !Ref ConfigDeliveryChannel
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        QSTagKey: !Ref QSTagKey
+        QSTagValue: !Sub ${QSTagValue}-${AWS::StackName}
+
   ProductionVpc:
     Type: AWS::CloudFormationStack
     DependsOn:
@@ -157,8 +237,8 @@ Resources:
         AvailabilityZones: !Join [ "," , !Ref pAvailabilityZones ]
         CreateAdditionalPrivateSubnets: true
         CreatePrivateSubnets: true
-        KeyPairName: !Ref pEC2KeyPairBastion
-        NATInstanceType: !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", InstanceType ]
+   #    KeyPairName: !Ref EC2KeyPairBastion
+   #    NATInstanceType: !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", InstanceType ]
         NumberOfAZs: 2
         PrivateSubnet1ACIDR: !FindInMap [ Networking, ProductionCIDR, Private1A ]
         PrivateSubnet1BCIDR: !FindInMap [ Networking, ProductionCIDR, Private1B ]
@@ -178,8 +258,8 @@ Resources:
         AvailabilityZones: !Join [ "," , !Ref pAvailabilityZones ]
         CreateAdditionalPrivateSubnets: true
         CreatePrivateSubnets: true
-        KeyPairName: !Ref pEC2KeyPairBastion
-        NATInstanceType: !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", InstanceType ]
+    #   KeyPairName: !Ref EC2KeyPairBastion
+    #   NATInstanceType: !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", InstanceType ]
         NumberOfAZs: 2
         PrivateSubnet1ACIDR: !FindInMap [ Networking, ManagementCIDR, Private1A ]
         PrivateSubnet1BCIDR: !FindInMap [ Networking, ManagementCIDR, Private1B ]
@@ -208,7 +288,6 @@ Resources:
         ManagementRouteTablePrivateB: !GetAtt ManagementVpc.Outputs.PrivateSubnet2ARouteTable
         ManagementRouteTablePublic: !GetAtt ManagementVpc.Outputs.PublicSubnetRouteTable
 
-
   ApplicationTemplate:
     Type: AWS::CloudFormation::Stack
     DependsOn: 
@@ -216,5 +295,18 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/application.template
       Parameters:
+        AWSHostedZoneID: !Ref AWSHostedZoneID
+        AWSPublicFQDN: !Ref AWSPublcFQDN
+        LogBucket: !GetAtt Logging.Outputs.LogBucket
+        PublicSubnetIds:  !Sub "${ProductionVpc.Outputs.PublicSubnet1ID},${ProductionVpc.Outputs.PublicSubnet2ID}"
+        PrivateSubnetAppIds: !Sub "${ProductionVpc.Outputs.PrivateSubnet1AID},${ProductionVpc.Outputs.PrivateSubnet2AID}"
+        PrivateSubnetDBIds: !Sub "${ProductionVpc.Outputs.PrivateSubnet1BID},${ProductionVpc.Outputs.PrivateSubnet2BID}"
+        SourceCidr: !Ref SourceCidr
+        SSLCertificateARN: !Ref SSLCertificateARN
+        VpcCidr: !GetAtt ProductionVpc.Outputs.VPCCIDR
+        VpcId: !GetAtt ProductionVpc.Outputs.VPCID
 
 Outputs:
+  ManagementVpcId:
+    Description: Management VPC ID
+    Value: !GetAtt ManagementVpc.Outputs.VPCID

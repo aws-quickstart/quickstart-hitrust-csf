@@ -3,24 +3,34 @@ Description: Set up VPC peering between VPCs
 Parameters:
   ProductionVpcId:
     Type: AWS::EC2::VPC::Id
+    Description: VPC ID for web app
   ProductionVpcCidr: 
     Type: String
+    Description: VPC CIDR for web app VPC
   ProductionRouteTablePrivateA: 
     Type: String
+    Description: Route Table Private Subnet A - web app VPC
   ProductionRouteTablePrivateB: 
     Type: String
+    Description: Route Table Private Subnet B - web app VPC
   ProductionRouteTablePublic: 
     Type: String
+    Description: Route Table Public Subnet - web app VPC
   ManagementVpcId: 
     Type: AWS::EC2::VPC::Id
+    Description: Management VPC ID
   ManagementVpcCidr: 
     Type: String
+    Description: Management VPC CIDR
   ManagementRouteTablePrivateA: 
     Type: String
+    Description: Route Table Private Subnet A - management VPC
   ManagementRouteTablePrivateB: 
     Type: String
+    Description: Route Table Private Subnet B - management VPC
   ManagementRouteTablePublic: 
     Type: String
+    Description: Route Table Public Subnet - management VPC
 
 Mappings:
   VpcPeering:
