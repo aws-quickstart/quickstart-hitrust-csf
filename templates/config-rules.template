@@ -26,10 +26,117 @@ Mappings:
       MaximumExecutionFrequency: One_Hour
 
 Resources:
-  # 1. Config Recorder Enabled - Custom
+  # IAM role for describing configurations in custom resources
+  LambdaConfigRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - "lambda.amazonaws.com"
+          Action:
+            - "sts:AssumeRole"
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSConfigRulesExecutionRole
+      - arn:aws:iam::aws:policy/service-role/AWSConfigRole
+      Policies:
+        - PolicyName: DescribeForConfig
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:DescribeLoadBalancers
+              - elasticloadbalancing:DescribeListeners
+              - elasticloadbalancing:DescribeTags
+              - ec2:DescribeSecurityGroups
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: "*"
 
-
-  # CloudTrail Checks
+  # Config: Recorder enabled
+  TriggerConfigRecorderEnabled:
+    Type: "AWS::Lambda::Permission"
+    DependsOn: LambdaConfigRecorderEnabled
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt LambdaConfigRecorderEnabled.Arn
+      Principal: config.amazonaws.com
+  RuleConfigRecorderEnabled:
+    Type: AWS::Config::ConfigRule
+    DependsOn: TriggerConfigRecorderEnabled
+    Properties:
+      Description: Checks if AWS Config recorder is turned on. N.B. This current rule does not check for S3 or SNS delivery mechanisms.
+      Source:
+        Owner: CUSTOM_LAMBDA
+        SourceIdentifier: !GetAtt LambdaConfigRecorderEnabled.Arn
+        SourceDetails:
+        - EventSource: aws.config
+          MaximumExecutionFrequency: One_Hour
+          MessageType: ScheduledNotification
+  LambdaConfigRecorderEnabled:
+    Type: AWS::Lambda::Function
+    DependsOn: LambdaConfigRole
+    Properties:
+      Description: Checks if Config Recorder is enabled
+      Handler: index.handler
+      Runtime: python3.7
+      Role: !GetAtt LambdaConfigRole.Arn
+      Timeout: 30
+      Code:
+        ZipFile: | 
+          import boto3
+          import json
+          from datetime import datetime
+          config = boto3.client('config')
+          def evaluate_compliance(rule_parameters):
+              # First check configuration recorder is created
+              config_recorder_response = config.describe_configuration_recorder_status()
+              if 'ConfigurationRecordersStatus' not in config_recorder_response or len(config_recorder_response['ConfigurationRecordersStatus']) < 1:
+                  return {
+                      'compliance_type': 'NON_COMPLIANT',
+                      'annotation': 'Cannot find config recorder status'
+                  }
+              for config_recorder in config_recorder_response['ConfigurationRecordersStatus']:
+                  if not config_recorder['recording']:
+                      return {
+                          'compliance_type': 'NON_COMPLIANT',
+                          'annotation': 'Config recorder is not recording'
+                      }
+              # Check that there are delivery channels and that they're mapping to the appropriate buckets
+              delivery_channels_response = config.describe_delivery_channels()
+              if 'DeliveryChannels' not in delivery_channels_response or len(delivery_channels_response['DeliveryChannels']) < 1:
+                  return {
+                      'compliance_type': 'NON_COMPLIANT',
+                      'annotation': 'No delivery channel for config recorder'
+                  }
+              return {
+                  'compliance_type': 'COMPLIANT',
+                  'annotation': 'Config recorder enabled with appropriate delivery channel'
+              }
+          def handler(event, context):
+              today = datetime.today()
+              rule_parameters = json.loads(event['ruleParameters']) if 'ruleParameters' in event else {}
+              evaluation = evaluate_compliance(rule_parameters)
+              result_token = event['resultToken'] if 'resultToken' in event else 'No token found'
+              config.put_evaluations(
+                  Evaluations=[
+                      {
+                          'ComplianceResourceType': 'AWS::::Account',
+                          'ComplianceResourceId': event['accountId'],
+                          'ComplianceType': evaluation['compliance_type'],
+                          'Annotation': evaluation['annotation'],
+                          'OrderingTimestamp': datetime(today.year, today.month, today.day, today.hour)
+                      }
+                  ],
+                  ResultToken=result_token
+              )
+ 
+  # CloudTrail: Check Enabled
   CloudTrailEnabled:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -38,6 +145,8 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: CLOUD_TRAIL_ENABLED
+  
+  # CloudTrail: Trails are encrypted
   CloudTrailEncryption:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -46,6 +155,8 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: CLOUD_TRAIL_ENCRYPTION_ENABLED
+
+  # CloudTrail: Log files validated
   CloudTrailLogFileValidation:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -55,7 +166,7 @@ Resources:
         Owner: AWS
         SourceIdentifier: CLOUD_TRAIL_LOG_FILE_VALIDATION_ENABLED
 
-  # EC2/ELB Checks
+  # EBS: Volumes encrypted
   EbsEncryption:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -67,6 +178,8 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: ENCRYPTED_VOLUMES
+
+  # EC2: No Public IP association
   Ec2NoPublicIp:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -77,6 +190,8 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: EC2_INSTANCE_NO_PUBLIC_IP
+
+  # ELB: Logging enabled to log bucket
   ElbLogging:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -92,9 +207,117 @@ Resources:
         Owner: AWS
         SourceIdentifier: ELB_LOGGING_ENABLED
 
-  
+  # ELB: Encryption enabled (443)
+  TriggerALBEncryption:
+    Type: "AWS::Lambda::Permission"
+    DependsOn: LambdaALBEncryption
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt LambdaALBEncryption.Arn
+      Principal: config.amazonaws.com
+  ALBEncryption:
+    Type: AWS::Config::ConfigRule
+    DependsOn: TriggerALBEncryption
+    Properties:
+      Description: Checks to ensure that all application load balancers are only reachable via HTTPS endpoints and not HTTP as well as have a cert on the listener
+      InputParameters:
+        DesiredPort: 443
+        DesiredProtocol: HTTPS
+        TagKey: !Ref QSTagKey
+        TagValue: !Ref QSTagValue
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::ElasticLoadBalancingV2::LoadBalancer
+      Source:
+        Owner: CUSTOM_LAMBDA
+        SourceIdentifier: !GetAtt LambdaALBEncryption.Arn
+        SourceDetails:
+        - EventSource: aws.config
+          MessageType: ConfigurationItemChangeNotification
+  LambdaALBEncryption:
+    Type: AWS::Lambda::Function
+    DependsOn: LambdaConfigRole
+    Properties:
+      Description: Checks if ALB only allows HTTPS
+      Handler: index.handler
+      Runtime: python3.6
+      Role: !GetAtt LambdaConfigRole.Arn
+      Timeout: 30
+      Code:
+        ZipFile: | 
+          from __future__ import print_function
+          import json
+          import boto3
+          # Create boto3 clients
+          config = boto3.client('config')
+          elb = boto3.client('elbv2')
+          def evaluate_compliance(configuration_item, rule_parameters):
+            desired_port = rule_parameters['DesiredPort']
+            desired_protocol = rule_parameters['DesiredProtocol']
+            tag_key = rule_parameters['TagKey']
+            tag_value = rule_parameters['TagValue']
+            
+            # First check if the load balancer is in scope (i.e. check tags)
+            if tag_key not in configuration_item['tags'] or configuration_item['tags'][tag_key] != tag_value:
+              return {
+                'compliance_type': 'NOT_APPLICABLE',
+                'annotation': 'Resource tags do not match desired tag. Out of scope'
+              }
 
-  # IAM Checks
+            load_balancer_arn = configuration_item['configuration']['loadBalancerArn']
+
+            # At this point we know in scope as the tag is in the ELB
+            # Check for compliance - port and SSL certificate
+            listeners_obj = elb.describe_listeners(LoadBalancerArn=load_balancer_arn)
+            
+            for listener in listeners_obj['Listeners']:
+              if desired_protocol != listener['Protocol']:
+                return {
+                  'compliance_type': 'NON_COMPLIANT',
+                  'annotation': 'Insecure %s protocol being used for the load balancer' % listener['Protocol']
+                }
+              if int(desired_port) != listener['Port']:
+                return {
+                  'compliance_type': 'NON_COMPLIANT',
+                  'annotation': '%s port being used for the load balancer rather than %s' % (listener['Port'], desired_port)
+                }
+              if len(listener['Certificates']) < 1:
+                return {
+                  'compliance_type': 'NON_COMPLIANT',
+                  'annotation': 'Does not have a SSL Cert installed'
+                }
+              for cert in listener['Certificates']:
+                if 'CertificateArn' not in cert:
+                  return {
+                    'compliance_type': 'NON_COMPLIANT',
+                    'annotation': 'Invalid SSL Cert installed - no ARN found'
+                  }
+            return {
+              'compliance_type': 'COMPLIANT',
+              'annotation': 'Load balancer is secure'
+            }
+          def handler(event, context):
+            invoking_event = json.loads(event['invokingEvent'])
+            rule_parameters = json.loads(event['ruleParameters'])
+            configuration_item = invoking_event['configurationItem']
+            # Check for compliance
+            evaluation = evaluate_compliance(configuration_item, rule_parameters)
+            result_token = event['resultToken'] if 'resultToken' in event else 'No token found'
+            # Post result
+            config.put_evaluations(
+                Evaluations=[
+                    {
+                        'ComplianceResourceType': configuration_item['resourceType'],
+                        'ComplianceResourceId': configuration_item['resourceId'],
+                        'ComplianceType': evaluation['compliance_type'],
+                        'Annotation': evaluation['annotation'],
+                        'OrderingTimestamp': configuration_item['configurationItemCaptureTime']
+                    },
+                ],
+                ResultToken=result_token
+            )
+
+  # IAM: Disallow Admin in all policies
   IamAdminDisallow:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -106,6 +329,8 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: IAM_POLICY_NO_STATEMENTS_WITH_ADMIN_ACCESS
+  
+  # IAM: Require IAM Users to have MFA
   IamMfa:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -115,29 +340,7 @@ Resources:
         Owner: AWS
         SourceIdentifier: IAM_USER_MFA_ENABLED
   
-  # Networking Checks
-  # Checks to ensure security groups don't have specific port open
-  RuleUnrestrictedSSH:
-    Type: AWS::Config::ConfigRule
-    Properties:
-      Description: Checks whether security groups that are in use disallow unrestricted incoming SSH traffic.
-      Scope:
-        ComplianceResourceTypes:
-        - AWS::EC2::SecurityGroup
-      Source:
-        Owner: AWS
-        SourceIdentifier: INCOMING_SSH_DISABLED
-  # 3. ALB Encryption and reachable only via HTTPS (not HTTP/port 80)
-  VpcFlowLogs:
-    Type: AWS::Config::ConfigRule
-    Properties:
-      Description: Checks whether Amazon Virtual Private Cloud flow logs are found and enabled for Amazon VPC.
-      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
-      Source:
-        Owner: AWS
-        SourceIdentifier: VPC_FLOW_LOGS_ENABLED
-
-  # RDS Checks
+  # RDS: Backups enabled
   RdsBackup:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -148,6 +351,8 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: DB_INSTANCE_BACKUP_ENABLED
+  
+  # RDS: DB instances not public
   RdsNotPublic:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -158,6 +363,8 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: RDS_INSTANCE_PUBLIC_ACCESS_CHECK
+  
+  # RDS: Multi-AZ enabled
   RdsMultiAZ:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -168,6 +375,8 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: RDS_MULTI_AZ_SUPPORT
+
+  # RDS: No public snapshots
   RdsSnapshotsPublic:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -178,6 +387,8 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: RDS_SNAPSHOTS_PUBLIC_PROHIBITED
+
+  # RDS: Encryption at-rest enabled
   RdsEncryptionAtRest:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -189,7 +400,7 @@ Resources:
         Owner: AWS
         SourceIdentifier: RDS_STORAGE_ENCRYPTED
 
-  # S3 Checks
+  # S3: Bucket Logging enabled
   S3BucketLogging:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -202,6 +413,8 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: S3_BUCKET_LOGGING_ENABLED
+
+  # S3: Bucket has SSE enabled
   S3BucketSSE:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -212,6 +425,8 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: S3_BUCKET_SERVER_SIDE_ENCRYPTION_ENABLED
+
+  # S3: Bucket enforces in-transit encryption
   S3BucketForceSSL:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -222,6 +437,8 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: S3_BUCKET_SSL_REQUESTS_ONLY
+
+  # S3: Disallow Public Read
   S3DisallowPublicRead:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -233,6 +450,8 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: S3_BUCKET_PUBLIC_READ_PROHIBITED
+    
+  # S3: Disallow Public Write
   S3DisallowPublicWrite:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -245,7 +464,107 @@ Resources:
         Owner: AWS
         SourceIdentifier: S3_BUCKET_PUBLIC_READ_PROHIBITED
 
-  # Tagging
+  # Security Groups: Block port 80
+  TriggerSecurityGroupPortBlocked:
+    Type: "AWS::Lambda::Permission"
+    DependsOn: LambdaSecurityGroupPortBlocked
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt LambdaSecurityGroupPortBlocked.Arn
+      Principal: config.amazonaws.com
+  SecurityGroupPortBlocked:
+    Type: AWS::Config::ConfigRule
+    DependsOn: TriggerSecurityGroupPortBlocked
+    Properties:
+      Description: Checks to ensure security groups do not have a specific port open
+      InputParameters:
+        UndesiredPort: 80
+        TagKey: !Ref QSTagKey
+        TagValue: !Ref QSTagValue
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::EC2::SecurityGroup
+      Source:
+        Owner: CUSTOM_LAMBDA
+        SourceIdentifier: !GetAtt LambdaSecurityGroupPortBlocked.Arn
+        SourceDetails:
+        - EventSource: aws.config
+          MessageType: ConfigurationItemChangeNotification
+  LambdaSecurityGroupPortBlocked:
+    Type: AWS::Lambda::Function
+    DependsOn: LambdaConfigRole
+    Properties:
+      Description: Checks if Security Groups don't have a specific port open
+      Handler: index.handler
+      Runtime: python3.7
+      Role: !GetAtt LambdaConfigRole.Arn
+      Timeout: 30
+      Code:
+        ZipFile: | 
+          from __future__ import print_function
+          import json
+          import boto3
+          config = boto3.client('config')
+          ec2 = boto3.client('ec2')
+          def evaluate_compliance(configuration_item, rule_parameters):
+              undesired_port = int(rule_parameters['UndesiredPort'])
+              tag_key = rule_parameters['TagKey']
+              tag_value = rule_parameters['TagValue']
+              configuration = configuration_item['configuration']
+
+              if tag_key not in configuration_item['tags'] or configuration_item['tags'][tag_key] != tag_value:
+                  return {
+                    'compliance_type': 'NOT_APPLICABLE',
+                    'annotation': 'Resource tags do not match desired tag. Out of scope'
+                  }
+  
+              for ip_permissions in configuration['ipPermissions']:
+                  if 'fromPort' not in ip_permissions and 'toPort' not in ip_permissions:
+                      return {
+                          'compliance_type': 'NON_COMPLIANT',
+                          'annotation': 'Security Group is open to all traffic so port %s is not blocked' % str(undesired_port)
+                      }
+                  if ip_permissions['fromPort'] <= undesired_port <= ip_permissions['toPort']:
+                      return {
+                          'compliance_type': 'NON_COMPLIANT',
+                          'annotation': 'Security Group port %s is not blocked' % str(undesired_port)
+                      }
+              return {
+                  'compliance_type': 'COMPLIANT',
+                  'annotation': 'Port %s not open for ingress' % str(undesired_port)
+              }
+          def handler(event, context):
+              invoking_event = json.loads(event['invokingEvent'])
+              rule_parameters = json.loads(event['ruleParameters'])
+              configuration_item = invoking_event['configurationItem']
+              evaluation = evaluate_compliance(configuration_item, rule_parameters)
+              result_token = event['resultToken'] if 'resultToken' in event else 'No token found'
+              config.put_evaluations(
+                  Evaluations=[
+                      {
+                          'ComplianceResourceType': configuration_item['resourceType'],
+                          'ComplianceResourceId': configuration_item['resourceId'],
+                          'ComplianceType': evaluation['compliance_type'],
+                          'Annotation': evaluation['annotation'],
+                          'OrderingTimestamp': configuration_item['configurationItemCaptureTime']
+                      },
+                  ],
+                  ResultToken=result_token
+              )
+
+  # Security Groups: Block unrestricted SSH
+  RuleUnrestrictedSSH:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether security groups that are in use disallow unrestricted incoming SSH traffic.
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::EC2::SecurityGroup
+      Source:
+        Owner: AWS
+        SourceIdentifier: INCOMING_SSH_DISABLED
+
+  # Tagging enabled for Quick Start Resources
   RequiredTags:
     Type: AWS::Config::ConfigRule
     Properties:
@@ -265,3 +584,13 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: REQUIRED_TAGS
+
+  # VPC: Flow logs enabled
+  VpcFlowLogs:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether Amazon Virtual Private Cloud flow logs are found and enabled for Amazon VPC.
+      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
+      Source:
+        Owner: AWS
+        SourceIdentifier: VPC_FLOW_LOGS_ENABLED
