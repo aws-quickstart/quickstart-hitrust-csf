@@ -76,6 +76,7 @@ Resources:
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         DomainName: !Ref AWSPublicFQDN
         HostedZoneID: !Ref AWSHostedZoneID
+        LogBucket: !Ref LogBucket
 
   Elb:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer

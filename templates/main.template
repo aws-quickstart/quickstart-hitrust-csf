@@ -1,7 +1,10 @@
 # - master
-#   - iam
 #   - logging
 #     - config rules
+#   - vpc management
+#   - vpc production
+#   - vpc networking (peering)
+#   - bastion
 #   - application
 #     - encrypted elb
 #       - copy lambda
@@ -10,7 +13,7 @@
 #     - database
 
 AWSTemplateFormatVersion: 2010-09-09
-Description: Main template for deploying example HITRUST CSF Quick Start
+Description: Main template for deploying example HITRUST CSF Quick Start. Creates VPC, 3-tier web app, and logging
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -34,6 +37,10 @@ Metadata:
       - QSTagKey
       - QSTagValue
     ParameterLabels:
+      AWSHostedZoneID:
+        default: DNS Zone ID
+      AWSPublicFQDN:
+        default: Full DNS Name for Web App
       ConfigRecorder:
         default: AWS Config Recorder ARN
       ConfigDeliveryChannel:
@@ -52,8 +59,17 @@ Parameters:
     Description: DNS Zone ID to contain the server's DNS entry.
     Type: AWS::Route53::HostedZone::Id
   AWSPublicFQDN:
-    Description: Tableau Server portal will be reachable at this address.
+    Description: Web app will be reachable at this address.
     Type: String
+  BastionAccessCidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
+    Description: IP address/range to allow access to bastion host from
+    Type: String
+  BastionKeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to Bastion Host
+    ConstraintDescription: Must be the name of an existing EC2 Key Pair
   ConfigRecorder:
     Type: String
     Default: ""
@@ -72,8 +88,6 @@ Parameters:
     AllowedPattern: '[a-zA-Z0-9!^*\-_+]*'
     ConstraintDescription: Can only contain alphanumeric characters or the following
       special characters !^*-_+, between 8 and 28 characters
-
-
   QSS3BucketName:
     AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-.]*[0-9a-zA-Z])*$
     ConstraintDescription: Quick Start bucket name can include numbers, lowercase
@@ -92,6 +106,11 @@ Parameters:
     Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
       can include numbers, lowercase letters, uppercase letters, hyphens (-), and
       forward slash (/).
+    Type: String
+  SourceCidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
+    Description: IP address/range to allow access to web app from
     Type: String
 
 Mappings:
@@ -112,108 +131,80 @@ Mappings:
       Public1: 10.101.100.0/24
       Public2: 10.101.101.0/24
       VPC: 10.101.0.0/16
+    Bastion:
+      InstanceType: t2.medium
+  # Need to update
   AWSAMIRegionMap:
     AMI:
       AMZNLINUX2HVM: amzn2-ami-hvm-2.0.20190618-x86_64-gp2 
     ap-east-1:
       AMZNLINUX2HVM: ami-570c7726
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     ap-northeast-1:
       AMZNLINUX2HVM: ami-0ebe863c3d16bca9d
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     ap-northeast-1:
       AMZNLINUX2HVM: ami-0c3fd0f5d33134a76
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     ap-northeast-2:
       AMZNLINUX2HVM: ami-095ca789e0549777d
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     ap-northeast-3:
       AMZNLINUX2HVM: ami-0ee933a7f81beb045
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     ap-south-1:
       AMZNLINUX2HVM: ami-0d2692b6acea72ee6
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     ap-southeast-1:
       AMZNLINUX2HVM: ami-01f7527546b557442
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     ap-southeast-2:
       AMZNLINUX2HVM: ami-0dc96254d5535925f
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     ca-central-1:
       AMZNLINUX2HVM: ami-0d4ae09ec9361d8ac
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     eu-central-1:
       AMZNLINUX2HVM: ami-0cc293023f983ed53
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     eu-north-1:
       AMZNLINUX2HVM: ami-3f36be41 
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     eu-west-1:
       AMZNLINUX2HVM: ami-0bbc25e23a7640b9b
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     eu-west-2:
       AMZNLINUX2HVM: ami-0d8e27447ec2c8410
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     eu-west-3:
       AMZNLINUX2HVM: ami-0adcddd3324248c4c
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     sa-east-1:
       AMZNLINUX2HVM: ami-058943e7d9b9cabfb
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m3.large
     us-east-1:
       AMZNLINUX2HVM: ami-0b898040803850657
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     us-east-2:
       AMZNLINUX2HVM: ami-0d8f6eb4f641ef691
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     us-gov-east-1:
       AMZNLINUX2HVM: ami-a2d938d3
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m3.large
     us-gov-west-1:
       AMZNLINUX2HVM: ami-e9a9d388
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m3.large
     us-west-1:
       AMZNLINUX2HVM: ami-056ee704806822732
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
     us-west-2:
       AMZNLINUX2HVM: ami-082b5a644766e0e6f
-      InstanceType: m5.large
       InstanceTypeDatabase: db.m5.large
   
-
 Conditions:
   GovCloudCondition: !Or [ !Equals [ !Ref AWS::Region, us-gov-west-1], !Equals [ !Ref AWS::Region, us-gov-east-1]]
   
 Resources:
-  # Need to create
-  Iam:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/iam.template
-      Parameters:
-        QSTagKey: !Ref QSTagKey
-        QSTagValue: !Sub ${QSTagValue}-${AWS::StackName}
-
   # Need Config Rules
   Logging:
     Type: AWS::CloudFormationStack
@@ -237,8 +228,6 @@ Resources:
         AvailabilityZones: !Join [ "," , !Ref pAvailabilityZones ]
         CreateAdditionalPrivateSubnets: true
         CreatePrivateSubnets: true
-   #    KeyPairName: !Ref EC2KeyPairBastion
-   #    NATInstanceType: !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", InstanceType ]
         NumberOfAZs: 2
         PrivateSubnet1ACIDR: !FindInMap [ Networking, ProductionCIDR, Private1A ]
         PrivateSubnet1BCIDR: !FindInMap [ Networking, ProductionCIDR, Private1B ]
@@ -255,11 +244,9 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template
       Parameters:
-        AvailabilityZones: !Join [ "," , !Ref pAvailabilityZones ]
+        AvailabilityZones: !Join [ "," , !Ref AvailabilityZones ]
         CreateAdditionalPrivateSubnets: true
         CreatePrivateSubnets: true
-    #   KeyPairName: !Ref EC2KeyPairBastion
-    #   NATInstanceType: !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", InstanceType ]
         NumberOfAZs: 2
         PrivateSubnet1ACIDR: !FindInMap [ Networking, ManagementCIDR, Private1A ]
         PrivateSubnet1BCIDR: !FindInMap [ Networking, ManagementCIDR, Private1B ]
@@ -288,15 +275,32 @@ Resources:
         ManagementRouteTablePrivateB: !GetAtt ManagementVpc.Outputs.PrivateSubnet2ARouteTable
         ManagementRouteTablePublic: !GetAtt ManagementVpc.Outputs.PublicSubnetRouteTable
 
-  ApplicationTemplate:
+  Bastion:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+    - VpcNetworking
+    - ManagementVpc
+    Properties:
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-linux-bastion/templates/linux-bastion.template
+      Parameters:
+        BastionInstanceType: !FindInMap [ Networking, Bastion, InstanceType ]
+        KeyPairName: !Ref BastionKeyPairName
+        RemoteAccessCIDR: !Ref BastionAccessCidr
+        PublicSubnet1ID: !GetAtt ManagementVpc.Outputs.PublicSubnet1ID
+        PublicSubnet2ID: !GetAtt ManagementVpc.Outputs.PublicSubnet2ID
+        VPCID: !GetAtt ManagementVpc.Outputs.VPCID
+
+  Application:
     Type: AWS::CloudFormation::Stack
     DependsOn: 
-    - ProductionVpcTemplate
+    - ProductionVpc
+    - Bastion
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/application.template
       Parameters:
         AWSHostedZoneID: !Ref AWSHostedZoneID
         AWSPublicFQDN: !Ref AWSPublcFQDN
+        BastionSecurityGroup: !GetAtt Bastion.Outputs.BastionSecurityGroupID
         LogBucket: !GetAtt Logging.Outputs.LogBucket
         PublicSubnetIds:  !Sub "${ProductionVpc.Outputs.PublicSubnet1ID},${ProductionVpc.Outputs.PublicSubnet2ID}"
         PrivateSubnetAppIds: !Sub "${ProductionVpc.Outputs.PrivateSubnet1AID},${ProductionVpc.Outputs.PrivateSubnet2AID}"
@@ -310,3 +314,6 @@ Outputs:
   ManagementVpcId:
     Description: Management VPC ID
     Value: !GetAtt ManagementVpc.Outputs.VPCID
+  ProductionVpcId:
+    Description: Production VPC ID
+    Value: !GetAtt ProductionVpc.Outputs.VPCID

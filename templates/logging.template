@@ -38,7 +38,7 @@
       Type: String
       Description: Tag value to identify resources from this Quick Start
   
-  Mappings: # Fill in more
+  Mappings:
     ElbLogging:
       us-east-1: 
         Principal: '127311923021'
@@ -58,23 +58,40 @@
         Principal: '652711504416'
       eu-west-3:
         Principal: '009996457667'
+      eu-north-1:
+        Principal: '897822967062'
+      ap-east-1:
+        Principal: '754344448648'
       ap-northeast-1:
         Principal: '582318560864'
       ap-northeast-2:
         Principal: '600734575887'
+      ap-northeast-3:
+        Principal: '383597477331'
       ap-southeast-1:
         Principal: '114774131450'
       ap-southeast-2:
         Principal: '783225319266'
       ap-south-1:
         Principal: '718504428378'
+      me-south-1:
+        Principal: '076674570225'
       sa-east-1:
         Principal: '507241528517'
+      us-gov-west-1:
+        Princiapl: '048591011584'
+      us-gov-east-1:
+        Principal: '190560391635'
+      cn-north-1:
+        Principal: '638102146993'
+      cn-northwest-1:
+        Principal: '037604701340'
   
 Conditions:
   CreateConfig: !And [ !Equals [ !Ref ConfigRecorderName, '' ], !Equals [ !Ref ConfigDeliveryChannelName, '' ] ]
 
 Resources:
+  # Create log bucket and disable delete
   LogBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -87,7 +104,6 @@ Resources:
         Value: !Ref QSTagValue
       VersioningConfiguration:
         Status: Enabled
-      
   LogBucketPolicy:
     DependsOn: CleanupLogBucket
     Type: AWS::S3::BucketPolicy
@@ -115,6 +131,7 @@ Resources:
           Action: "s3:PutObject"
           Resource: !Sub arn:aws:s3:::${LogBucket}/*
         
+  # Cleans up log bucket when stack is deleted/rolled back
   CleanupLogBucket:
     Type: AWS::CloudFormation::Stack
     DependsOn:
@@ -124,7 +141,6 @@ Resources:
       Parameters:
         Bucket: !Ref LogBucket
         ServiceToken: !GetAtt CleanupRole.Arn
-
   CleanupRole:
     Type: AWS::IAM::Role
     Properties:
@@ -180,11 +196,9 @@ Resources:
           Resource: "*"
       Roles:
       - !Ref ConfigRole
-
   ConfigSNS:
     Type: AWS::SNS::Topic
     Condition: CreateConfig
-
   ConfigSNSPolicy:
     Type: AWS::SNS::TopicPolicy
     Condition: CreateConfig
@@ -201,7 +215,6 @@ Resources:
           Resource: !Ref ConfigSNS
       Topics:
       - !Ref ConfigSNS
-
   ConfigRecorder:
     Type: AWS::Config::ConfigurationRecorder
     Condition: CreateConfig
@@ -210,7 +223,6 @@ Resources:
         AllSupported: true
         IncludeGlobalResourceTypes: true
       RoleARN: !GetAtt ConfigRole.Arn
-
   ConfigDeliveryChannel:
     Type: AWS::Config::DeliveryChannel
     Condition: CreateConfig

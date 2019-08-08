@@ -1,0 +1,55 @@
+# Config Rules that are included.
+# N.B. These are examples and are not meant to be exhaustive. 
+# Please consult your legal and compliance teams to determine 
+# the configuration management scope you wish to capture.
+
+# 1. Config Recorder Enabled
+# 2. CloudTrail Enabled https://docs.aws.amazon.com/config/latest/developerguide/cloudtrail-enabled.html
+# 3. ALB Encryption and reachable only via HTTPS (not HTTP/port 80)
+# 4. Checks to ensure all attached EBS volumes are encrypted
+# 7. Checks to ensure security groups don't have specific port open
+# 8. Security Group disallow unrestricted incoming SSH traffic
+# 10. No ec2 instnaces (app) have public IP https://docs.aws.amazon.com/config/latest/developerguide/ec2-instance-no-public-ip.html
+# 11. ALBs logging https://docs.aws.amazon.com/config/latest/developerguide/elb-logging-enabled.html
+# https://docs.aws.amazon.com/config/latest/developerguide/db-instance-backup-enabled.html
+# https://docs.aws.amazon.com/config/latest/developerguide/rds-instance-public-access-check.html
+# https://docs.aws.amazon.com/config/latest/developerguide/rds-multi-az-support.html
+# https://docs.aws.amazon.com/config/latest/developerguide/rds-snapshots-public-prohibited.html
+# https://docs.aws.amazon.com/config/latest/developerguide/rds-storage-encrypted.html
+# https://docs.aws.amazon.com/config/latest/developerguide/cloud-trail-encryption-enabled.html
+# https://docs.aws.amazon.com/config/latest/developerguide/cloud-trail-log-file-validation-enabled.html
+# https://docs.aws.amazon.com/config/latest/developerguide/cloudformation-stack-drift-detection-check.html
+# https://docs.aws.amazon.com/config/latest/developerguide/vpc-flow-logs-enabled.html
+# https://docs.aws.amazon.com/config/latest/developerguide/iam-policy-no-statements-with-admin-access.html
+# https://docs.aws.amazon.com/config/latest/developerguide/iam-user-mfa-enabled.html
+# https://docs.aws.amazon.com/config/latest/developerguide/iam-user-mfa-enabled.html
+
+
+Parameters:
+  LogBucketName:
+    Type: String
+    Description: Log bucket
+  ConfigRecorder:
+    Type: String
+    Default: ""
+    Description: Config Recorder. Empty string will create a new Config Recorder.
+  ConfigDeliveryChannel:
+    Type: String
+    Default: ""
+    Description: Config Delivery Channel. Must have if Config Recorder specified.
+  QSTagKey:
+    Type: String
+    Description: Tag key to identify resources from this Quick Start
+  QSTagValue:
+    Type: String
+    Description: Tag value to identify resources from this Quick Start
+
+Resources:
+
+  # S3 Checks
+  
+  # https://docs.aws.amazon.com/config/latest/developerguide/s3-bucket-logging-enabled.html
+# https://docs.aws.amazon.com/config/latest/developerguide/s3-bucket-server-side-encryption-enabled.html
+# https://docs.aws.amazon.com/config/latest/developerguide/s3-bucket-ssl-requests-only.html
+# 5. Checks that all S3 buckets disallow public read access https://docs.aws.amazon.com/config/latest/developerguide/s3-bucket-public-read-prohibited.html
+# 6. Checks that S3 buckets do not allow public write access https://docs.aws.amazon.com/config/latest/developerguide/s3-bucket-public-write-prohibited.html

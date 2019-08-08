@@ -22,12 +22,21 @@ Parameters:
       can include numbers, lowercase letters, uppercase letters, hyphens (-), and
       forward slash (/).
     Type: String
+  QSTagKey:
+    Type: String
+    Description: Tag key to identify resources from this Quick Start
+  QSTagValue:
+    Type: String
+    Description: Tag value to identify resources from this Quick Start
   HostedZoneID:
     Description: Route 53 Hosted Zone ID to use. If left blank, Route 53
       will not be configured and DNS must be setup manually. If you specify this,
       you must also specify DomainName
     Type: String
     MaxLength: 32
+  LogBucket:
+      Type: String
+      Description: Bucket to write logs to
   DomainName:
     Description: Domain Name configured for the cluster.
     Type: String
@@ -37,8 +46,11 @@ Resources:
     Properties: 
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/copy-lambdas.yaml
       Parameters:
+        LogBucket: !Ref LogBucket
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        QSTagKey: !Ref QSTagKey
+        QSTagValue: !Ref QSTagValue
   ACMCertificateRole:
     Type: AWS::IAM::Role
     Properties:
