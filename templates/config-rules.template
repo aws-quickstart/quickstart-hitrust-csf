@@ -3,39 +3,15 @@
 # Please consult your legal and compliance teams to determine 
 # the configuration management scope you wish to capture.
 
-# 1. Config Recorder Enabled
-# 2. CloudTrail Enabled https://docs.aws.amazon.com/config/latest/developerguide/cloudtrail-enabled.html
-# 3. ALB Encryption and reachable only via HTTPS (not HTTP/port 80)
-# 4. Checks to ensure all attached EBS volumes are encrypted
-# 7. Checks to ensure security groups don't have specific port open
-# 8. Security Group disallow unrestricted incoming SSH traffic
-# 10. No ec2 instnaces (app) have public IP https://docs.aws.amazon.com/config/latest/developerguide/ec2-instance-no-public-ip.html
-# 11. ALBs logging https://docs.aws.amazon.com/config/latest/developerguide/elb-logging-enabled.html
-# https://docs.aws.amazon.com/config/latest/developerguide/db-instance-backup-enabled.html
-# https://docs.aws.amazon.com/config/latest/developerguide/rds-instance-public-access-check.html
-# https://docs.aws.amazon.com/config/latest/developerguide/rds-multi-az-support.html
-# https://docs.aws.amazon.com/config/latest/developerguide/rds-snapshots-public-prohibited.html
-# https://docs.aws.amazon.com/config/latest/developerguide/rds-storage-encrypted.html
-# https://docs.aws.amazon.com/config/latest/developerguide/cloud-trail-encryption-enabled.html
-# https://docs.aws.amazon.com/config/latest/developerguide/cloud-trail-log-file-validation-enabled.html
-# https://docs.aws.amazon.com/config/latest/developerguide/cloudformation-stack-drift-detection-check.html
-# https://docs.aws.amazon.com/config/latest/developerguide/vpc-flow-logs-enabled.html
-# https://docs.aws.amazon.com/config/latest/developerguide/iam-policy-no-statements-with-admin-access.html
-# https://docs.aws.amazon.com/config/latest/developerguide/iam-user-mfa-enabled.html
-# https://docs.aws.amazon.com/config/latest/developerguide/iam-user-mfa-enabled.html
-
-
 Parameters:
-  LogBucketName:
+  LogBucket:
     Type: String
     Description: Log bucket
   ConfigRecorder:
     Type: String
-    Default: ""
     Description: Config Recorder. Empty string will create a new Config Recorder.
   ConfigDeliveryChannel:
     Type: String
-    Default: ""
     Description: Config Delivery Channel. Must have if Config Recorder specified.
   QSTagKey:
     Type: String
@@ -44,12 +20,248 @@ Parameters:
     Type: String
     Description: Tag value to identify resources from this Quick Start
 
+Mappings:
+  Config:
+    Defaults:
+      MaximumExecutionFrequency: One_Hour
+
 Resources:
+  # 1. Config Recorder Enabled - Custom
+
+
+  # CloudTrail Checks
+  CloudTrailEnabled:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether AWS CloudTrail is enabled in your AWS account
+      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
+      Source:
+        Owner: AWS
+        SourceIdentifier: CLOUD_TRAIL_ENABLED
+  CloudTrailEncryption:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether AWS CloudTrail is configured to use the server side encryption (SSE) AWS Key Management Service (AWS KMS) customer master key (CMK) encryption. The rule is compliant if the KmsKeyId is defined.
+      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
+      Source:
+        Owner: AWS
+        SourceIdentifier: CLOUD_TRAIL_ENCRYPTION_ENABLED
+  CloudTrailLogFileValidation:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether AWS CloudTrail creates a signed digest file with logs. AWS recommends that the file validation must be enabled on all trails. The rule is noncompliant if the validation is not enabled.
+      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
+      Source:
+        Owner: AWS
+        SourceIdentifier: CLOUD_TRAIL_LOG_FILE_VALIDATION_ENABLED
+
+  # EC2/ELB Checks
+  EbsEncryption:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether EBS volumes that are in an attached state are encrypted.
+      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::EC2::Volume
+      Source:
+        Owner: AWS
+        SourceIdentifier: ENCRYPTED_VOLUMES
+  Ec2NoPublicIp:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether Amazon Elastic Compute Cloud (Amazon EC2) instances have a public IP association. The rule is NON_COMPLIANT if the publicIp field is present in the Amazon EC2 instance configuration item. This rule applies only to IPv4.
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::EC2::Instance
+      Source:
+        Owner: AWS
+        SourceIdentifier: EC2_INSTANCE_NO_PUBLIC_IP
+  ElbLogging:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether the Application Load Balancers and the Classic Load Balancers have logging enabled.
+      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
+      InputParameters:
+        s3BucketNames: !Ref LogBucket
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::ElasticLoadBalancing:LoadBalancer
+        - AWS::ElasticLoadBalancingV2::LoadBalancer
+      Source:
+        Owner: AWS
+        SourceIdentifier: ELB_LOGGING_ENABLED
+
+  
+
+  # IAM Checks
+  IamAdminDisallow:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: 'Checks whether the default version of AWS Identity and Access Management (IAM) policies do not have administrator access. If any statement has "Effect": "Allow" with "Action": "*" over "Resource": "*", the rule is NON_COMPLIANT.'
+      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
+      Scope:
+        ComplianceResourcetypes:
+        - AWS::IAM::Policy
+      Source:
+        Owner: AWS
+        SourceIdentifier: IAM_POLICY_NO_STATEMENTS_WITH_ADMIN_ACCESS
+  IamMfa:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether the AWS Identity and Access Management users have multi-factor authentication (MFA) enabled.
+      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
+      Source:
+        Owner: AWS
+        SourceIdentifier: IAM_USER_MFA_ENABLED
+  
+  # Networking Checks
+  # Checks to ensure security groups don't have specific port open
+  RuleUnrestrictedSSH:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether security groups that are in use disallow unrestricted incoming SSH traffic.
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::EC2::SecurityGroup
+      Source:
+        Owner: AWS
+        SourceIdentifier: INCOMING_SSH_DISABLED
+  # 3. ALB Encryption and reachable only via HTTPS (not HTTP/port 80)
+  VpcFlowLogs:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether Amazon Virtual Private Cloud flow logs are found and enabled for Amazon VPC.
+      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
+      Source:
+        Owner: AWS
+        SourceIdentifier: VPC_FLOW_LOGS_ENABLED
+
+  # RDS Checks
+  RdsBackup:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether RDS DB instances have backups enabled.
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::RDS::DBInstance
+      Source:
+        Owner: AWS
+        SourceIdentifier: DB_INSTANCE_BACKUP_ENABLED
+  RdsNotPublic:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether the Amazon Relational Database Service (RDS) instances are not publicly accessible. The rule is non-compliant if the publiclyAccessible field is true in the instance configuration item.
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::RDS::DBInstance
+      Source:
+        Owner: AWS
+        SourceIdentifier: RDS_INSTANCE_PUBLIC_ACCESS_CHECK
+  RdsMultiAZ:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether high availability is enabled for your RDS DB instances.
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::RDS::DBInstance
+      Source:
+        Owner: AWS
+        SourceIdentifier: RDS_MULTI_AZ_SUPPORT
+  RdsSnapshotsPublic:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks if Amazon Relational Database Service (Amazon RDS) snapshots are public. The rule is non-compliant if any existing and new Amazon RDS snapshots are public.
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::RDS::DBSnapshot
+      Source:
+        Owner: AWS
+        SourceIdentifier: RDS_SNAPSHOTS_PUBLIC_PROHIBITED
+  RdsEncryptionAtRest:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether storage encryption is enabled for your RDS DB instances.
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::RDS::DBInstance
+      Source:
+        Owner: AWS
+        SourceIdentifier: RDS_STORAGE_ENCRYPTED
 
   # S3 Checks
-  
-  # https://docs.aws.amazon.com/config/latest/developerguide/s3-bucket-logging-enabled.html
-# https://docs.aws.amazon.com/config/latest/developerguide/s3-bucket-server-side-encryption-enabled.html
-# https://docs.aws.amazon.com/config/latest/developerguide/s3-bucket-ssl-requests-only.html
-# 5. Checks that all S3 buckets disallow public read access https://docs.aws.amazon.com/config/latest/developerguide/s3-bucket-public-read-prohibited.html
-# 6. Checks that S3 buckets do not allow public write access https://docs.aws.amazon.com/config/latest/developerguide/s3-bucket-public-write-prohibited.html
+  S3BucketLogging:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether logging is enabled for your S3 buckets.
+      InputParameters:
+        targetBucket: !Ref LogBucket
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::S3::Bucket
+      Source:
+        Owner: AWS
+        SourceIdentifier: S3_BUCKET_LOGGING_ENABLED
+  S3BucketSSE:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks that your Amazon S3 bucket either has S3 default encryption enabled or that the S3 bucket policy explicitly denies put-object requests without server side encryption.
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::S3::Bucket
+      Source:
+        Owner: AWS
+        SourceIdentifier: S3_BUCKET_SERVER_SIDE_ENCRYPTION_ENABLED
+  S3BucketForceSSL:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether S3 buckets have policies that require requests to use Secure Socket Layer (SSL).
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::S3::Bucket
+      Source:
+        Owner: AWS
+        SourceIdentifier: S3_BUCKET_SSL_REQUESTS_ONLY
+  S3DisallowPublicRead:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks that your Amazon S3 buckets do not allow public read access. The rule checks the Block Public Access settings, the bucket policy, and the bucket access control list (ACL).
+      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::S3::Bucket
+      Source:
+        Owner: AWS
+        SourceIdentifier: S3_BUCKET_PUBLIC_READ_PROHIBITED
+  S3DisallowPublicWrite:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks that your Amazon S3 buckets do not allow public write access. The rule checks the Block Public Access settings, the bucket policy, and the bucket access control list (ACL).
+      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::S3::Bucket
+      Source:
+        Owner: AWS
+        SourceIdentifier: S3_BUCKET_PUBLIC_READ_PROHIBITED
+
+  # Tagging
+  RequiredTags:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Description: Checks whether required tag are used.
+      InputParameters:
+        tag1Key: !Ref QSTagKey
+        tag1Value: !Ref QSTagValue
+      Scope:
+        ComplianceResourceTypes:
+        - AWS::EC2::Volume
+        - AWS::EC2::Instance
+        - AWS::EC2::SecurityGroup
+        - AWS::ElasticLoadBalancingV2::LoadBalancer
+        - AWS::RDS::DBInstance
+        - AWS::RDS::DBSubnetGroup
+        - AWS::S3::Bucket
+      Source:
+        Owner: AWS
+        SourceIdentifier: REQUIRED_TAGS
