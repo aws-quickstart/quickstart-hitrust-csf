@@ -102,11 +102,9 @@ Parameters:
   QSTagKey:
     Type: String
     Description: Tag key to identify resources from this Quick Start.
-    Default: QuickStartID
   QSTagValue:
     Type: String
     Description: Tag value to identify resources from this Quick Start.
-    Default: HITRUST-CSF
   SourceCidr:
     AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
     ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
@@ -153,7 +151,7 @@ Resources:
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         QSTagKey: !Ref QSTagKey
-        QSTagValue: !Sub ${QSTagValue}-${AWS::StackName}
+        QSTagValue: !Ref QSTagValue
         SourceCIDR: !Ref SourceCIDR
         SSLCertificateARN: !Ref SSLCertificateARN
         VpcCidr: !Ref VpcCidr
@@ -174,7 +172,7 @@ Resources:
         SourceSecurityGroupId: !Ref BastionSecurityGroup
       Tags:
       - Key: !Ref QSTagKey
-        Value: !Sub ${QSTagValue}-${AWS::StackName}
+        Value: !Ref QSTagValue
       VpcId: !Ref VpcId
 
   # Configure Database
@@ -184,13 +182,16 @@ Resources:
     - AppInstanceSecurityGroup
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/database.template
-      Properties:
+      Parameters:
         DBInstanceClass: !Ref DBInstanceClass
         DBMasterUser: !FindInMap [ Database, Defaults, User]
         DBPassword: !Ref DBPassword
         DBPrivateSubnets: !Ref PrivateSubnetDBIds
         SecurityGroupAppInstance: !Ref AppInstanceSecurityGroup
         VpcId: !Ref VpcId
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
 
   WebContentBucket:
     Type: AWS::S3::Bucket
@@ -211,8 +212,8 @@ Resources:
         DestinationBucket: !Ref LoggingBucket
         LogPrefix: !FindInMap [ Storage, WebContent, LogPrefix ]
       Tags:
-      - Key: QSTagKey
-        Value: QSTagValue
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
       VersioningConfiguration:
         Status: Enabled
   WebContentS3Policy:
@@ -479,6 +480,53 @@ Resources:
         ResourceSignal:
           Count: 1
           Timeout: PT15M
+  AutoScalingUpApp:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AppASG
+      Cooldown: 1
+      ScalingAdjustment: 1
+  AutoScalingDownApp:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AppASG
+      Cooldown: 1
+      ScalingAdjustment: -1
+  CWAlarmHighCPUApp:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: 1
+      Statistic: Average
+      Threshold: 50
+      AlarmDescription: Alarm if CPU too high or metric disappears indicating instance
+        is down
+      Period: 60
+      AlarmActions:
+      - !Ref AutoScalingDownApp
+      Namespace: AWS/EC2
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref AppASG
+      ComparisonOperator: GreaterThanThreshold
+      MetricName: CPUUtilization
+  CWAlarmLowCPUApp:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: 1
+      Statistic: Average
+      Threshold: 10
+      AlarmDescription: Alarm if CPU too low, remove an app server
+      Period: 60
+      AlarmActions:
+      - !Ref AutoScalingDownApp
+      Namespace: AWS/EC2
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref AppASG
+      ComparisonOperator: LessThanThreshold
+      MetricName: CPUUtilization
 
 Outputs:
   LoadBalancerDNSName:
@@ -490,3 +538,6 @@ Outputs:
   ApplicationURL:
     Description: Public DNS name to reach cluster
     Value: !Sub https://${AWSPublicFQDN}
+  LandingPageURL:
+    Value: !Sub https://${AWSPublicFQDN}/landing.html
+    Description: Landing Page

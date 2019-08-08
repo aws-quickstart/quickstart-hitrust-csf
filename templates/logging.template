@@ -141,6 +141,9 @@ Resources:
       Parameters:
         Bucket: !Ref LogBucket
         ServiceToken: !GetAtt CleanupRole.Arn
+        Tags:
+        - Key: QSTagKey
+        - Value: QSTagValue
   CleanupRole:
     Type: AWS::IAM::Role
     Properties:
@@ -246,6 +249,9 @@ Resources:
         LogBucketName: !Ref LogBucket
         QSTagKey: !Ref QSTagKey
         QSTagValue: !Ref QSTagValue
+      Tags:
+      - Key: QSTagKey
+        Value: QSTagValue
 
 Outputs:
   LogBucket:

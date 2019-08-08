@@ -132,7 +132,7 @@ Mappings:
       Public2: 10.101.101.0/24
       VPC: 10.101.0.0/16
     Bastion:
-      InstanceType: t2.medium
+      InstanceType: t3.medium
   # Need to update
   AWSAMIRegionMap:
     AMI:
@@ -217,6 +217,9 @@ Resources:
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         QSTagKey: !Ref QSTagKey
         QSTagValue: !Sub ${QSTagValue}-${AWS::StackName}
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Sub ${QSTagValue}-${AWS::StackName}
 
   ProductionVpc:
     Type: AWS::CloudFormationStack
@@ -235,8 +238,14 @@ Resources:
         PrivateSubnet2BCIDR: !FindInMap [ Networking, ProductionCIDR, Private2B ]
         PublicSubnet1CIDR: !FindInMap [ Networking, ProductionCIDR, Public1 ]
         PublicSubnet2CIDR: !FindInMap [ Networking, ProductionCIDR, Public2 ]
+        PublicSubnetTag1: !Sub ${QSTagKey}=${QSTagValue}-${AWS::StackName}
+        PrivateSubnetATag1: !Sub ${QSTagKey}=${QSTagValue}-${AWS::StackName}
+        PrivateSubnetBTag1: !Sub ${QSTagKey}=${QSTagValue}-${AWS::StackName}
         VPCCIDR: !FindInMap [ Networking, ProductionCIDR, VPC ]
-  
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Sub ${QSTagValue}-${AWS::StackName}
+    
   ManagementVpc:
     Type: AWS::CloudFormation::Stack
     DependsOn: 
@@ -254,8 +263,14 @@ Resources:
         PrivateSubnet2BCIDR: !FindInMap [ Networking, ManagementCIDR, Private2B ]
         PublicSubnet1CIDR: !FindInMap [ Networking, ManagementCIDR, Public1 ]
         PublicSubnet2CIDR: !FindInMap [ Networking, ManagementCIDR, Public2 ]
+        PublicSubnetTag1: !Sub ${QSTagKey}=${QSTagValue}-${AWS::StackName}
+        PrivateSubnetATag1: !Sub ${QSTagKey}=${QSTagValue}-${AWS::StackName}
+        PrivateSubnetBTag1: !Sub ${QSTagKey}=${QSTagValue}-${AWS::StackName}
         VPCCIDR: !FindInMap [ Networking, ManagementCIDR, VPC ]
-
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Sub ${QSTagValue}-${AWS::StackName}
+    
   VpcNetworking:
     Type: AWS::CloudFormation::Stack
     DependsOn:
@@ -274,6 +289,11 @@ Resources:
         ManagementRouteTablePrivateA: !GetAtt ManagementVpc.Outputs.PrivateSubnet1ARouteTable
         ManagementRouteTablePrivateB: !GetAtt ManagementVpc.Outputs.PrivateSubnet2ARouteTable
         ManagementRouteTablePublic: !GetAtt ManagementVpc.Outputs.PublicSubnetRouteTable
+        QSTagKey: !Ref QSTagKey
+        QSTagValue: !Sub ${QSTagValue}-${AWS::StackName}
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Sub ${QSTagValue}-${AWS::StackName}
 
   Bastion:
     Type: AWS::CloudFormation::Stack
@@ -289,6 +309,9 @@ Resources:
         PublicSubnet1ID: !GetAtt ManagementVpc.Outputs.PublicSubnet1ID
         PublicSubnet2ID: !GetAtt ManagementVpc.Outputs.PublicSubnet2ID
         VPCID: !GetAtt ManagementVpc.Outputs.VPCID
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Sub ${QSTagValue}-${AWS::StackName}
 
   Application:
     Type: AWS::CloudFormation::Stack
@@ -305,10 +328,15 @@ Resources:
         PublicSubnetIds:  !Sub "${ProductionVpc.Outputs.PublicSubnet1ID},${ProductionVpc.Outputs.PublicSubnet2ID}"
         PrivateSubnetAppIds: !Sub "${ProductionVpc.Outputs.PrivateSubnet1AID},${ProductionVpc.Outputs.PrivateSubnet2AID}"
         PrivateSubnetDBIds: !Sub "${ProductionVpc.Outputs.PrivateSubnet1BID},${ProductionVpc.Outputs.PrivateSubnet2BID}"
+        QSTagKey: !Ref QSTagKey
+        QSTagValue: !Sub ${QSTagValue}-${AWS::StackName}
         SourceCidr: !Ref SourceCidr
         SSLCertificateARN: !Ref SSLCertificateARN
         VpcCidr: !GetAtt ProductionVpc.Outputs.VPCCIDR
         VpcId: !GetAtt ProductionVpc.Outputs.VPCID
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Sub ${QSTagValue}-${AWS::StackName}
 
 Outputs:
   ManagementVpcId:
@@ -317,3 +345,9 @@ Outputs:
   ProductionVpcId:
     Description: Production VPC ID
     Value: !GetAtt ProductionVpc.Outputs.VPCID
+  ApplicationURL:
+    Description: Web App URL
+    Value: !GetAtt Application.Outputs.ApplicationURL
+  LandingPageURL:
+    Description: Landing Page
+    Value: !GetAtt Application.Outputs.ApplicationURL

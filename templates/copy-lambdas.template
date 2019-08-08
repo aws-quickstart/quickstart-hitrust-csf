@@ -123,7 +123,10 @@ Resources:
       Handler: index.handler
       Role: !GetAtt CopyObjectsRole.Arn
       Runtime: python3.7
-      Timeout: 240
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
+      Timeout: 600
   CopyObjectsRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -265,6 +268,9 @@ Resources:
       Handler: index.handler
       Role: !GetAtt S3CleanUpRole.Arn
       Runtime: python3.7
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
       Timeout: 600
   S3CleanUpRole:
     Type: AWS::IAM::Role

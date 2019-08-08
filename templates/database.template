@@ -11,6 +11,12 @@ Parameters:
     NoEcho: true
   DBPrivateSubnets:
     Type: List<AWS::EC2::Subnet::Id>
+  QSTagKey:
+    Type: String
+    Description: Tag key to identify resources from this Quick Start
+  QSTagValue:
+    Type: String
+    Description: Tag value to identify resources from this Quick Start
   SecurityGroupAppInstance:
     Description: App Instance Security Group
     Type: AWS::EC2::SecurityGroup::Id
@@ -41,11 +47,16 @@ Resources:
       Tags:
       - Key: Name
         Value: !FindInMap [ RDS, SecurityGroup, Name ]
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
       DBSubnetGroupDescription: MySQL RDS Subnet Group
       SubnetIds: !Ref DBPrivateSubnets
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
   DBMySQL:
     Type: AWS::RDS::DBInstance
     DependsOn:
@@ -61,6 +72,9 @@ Resources:
       StorageEncrypted: true
       MasterUsername: !Ref DBMasterUser
       MasterPassword: !Ref DBPassword
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
       VPCSecurityGroups:
       - !Ref DBSecurityGroup
 

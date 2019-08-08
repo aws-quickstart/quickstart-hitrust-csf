@@ -51,6 +51,9 @@ Resources:
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         QSTagKey: !Ref QSTagKey
         QSTagValue: !Ref QSTagValue
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
   ACMCertificateRole:
     Type: AWS::IAM::Role
     Properties:
@@ -100,6 +103,9 @@ Resources:
       Runtime: python3.7
       Role: !GetAtt ACMCertificateRole.Arn
       Timeout: 600
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
       Code:
         S3Bucket: !GetAtt CopyLambdaStack.Outputs.LambdaZipsBucket
         S3Key: !Sub "${QSS3KeyPrefix}functions/packages/ACMCert/lambda.zip"

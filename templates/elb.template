@@ -77,6 +77,9 @@ Resources:
         DomainName: !Ref AWSPublicFQDN
         HostedZoneID: !Ref AWSHostedZoneID
         LogBucket: !Ref LogBucket
+      Tags:
+      - Key: QSTagKey
+        Value: QSTagValue
 
   Elb:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer

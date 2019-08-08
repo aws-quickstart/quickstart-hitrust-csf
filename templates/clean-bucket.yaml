@@ -8,6 +8,12 @@ Parameters:
   ServiceToken:
     Description: The Role ARN required to execute the Custom Resource.
     Type: String
+  QSTagKey:
+    Type: String
+    Description: Tag key to identify resources from this Quick Start.
+  QSTagValue:
+    Type: String
+    Description: Tag value to identify resources from this Quick Start.
 Resources:
   CleanUpS3Bucket:
     Properties:
@@ -17,6 +23,9 @@ Resources:
   CleanUpS3BucketFunction:
     Type: AWS::Lambda::Function
     Properties:
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
       Code:
         ZipFile: |
           import json

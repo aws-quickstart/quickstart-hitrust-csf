@@ -31,6 +31,12 @@ Parameters:
   ManagementRouteTablePublic: 
     Type: String
     Description: Route Table Public Subnet - management VPC
+  QSTagKey:
+    Type: String
+    Description: Tag key to identify resources from this Quick Start.
+  QSTagValue:
+    Type: String
+    Description: Tag value to identify resources from this Quick Start.
 
 Mappings:
   VpcPeering:
@@ -46,6 +52,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !FindInMap [ VpcPeering, Tags, Name ]
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
   RouteManagementProductionPrivateA:
     Type: AWS::EC2::Route
     DependsOn: VpcPeeringConnection

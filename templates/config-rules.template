@@ -87,6 +87,9 @@ Resources:
       Runtime: python3.7
       Role: !GetAtt LambdaConfigRole.Arn
       Timeout: 30
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
       Code:
         ZipFile: | 
           import boto3
@@ -316,6 +319,9 @@ Resources:
                 ],
                 ResultToken=result_token
             )
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
 
   # IAM: Disallow Admin in all policies
   IamAdminDisallow:
@@ -551,6 +557,9 @@ Resources:
                   ],
                   ResultToken=result_token
               )
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
 
   # Security Groups: Block unrestricted SSH
   RuleUnrestrictedSSH:
