@@ -18,6 +18,10 @@ Metadata:
       - QSTagKey
       - QSTagValue
     - Label:
+        default: Database Configuration
+      Parameters:
+      - DBPassword
+    - Label:
         default: Network Configuration
       Parameters:
       - BastionSecurityGroup
@@ -34,6 +38,8 @@ Metadata:
         default: Full DNS Name for Web App
       BastionSecurityGroup:
         default: Bastion Host Security Group ID
+      DBPassword:
+        default: Database Password
       LogBucket:
         default: Log Bucket
       PublicSubnetIds:
@@ -59,6 +65,9 @@ Metadata:
       VpcId:
         default: VPC ID
 Parameters:
+  AppImageId:
+    Description: App Instance AMII ID
+    Type: AWS::EC2::Image::Id
   AWSHostedZoneID:
     Description: DNS Zone ID to contain the server's DNS entry.
     Type: String
@@ -68,6 +77,16 @@ Parameters:
   BastionSecurityGroup:
     Type: AWS::EC2::SecurityGroup::Id
     Description: EC2 Security Group for the bastion host.
+  DBPassword:
+    Description: Mixed alphanumeric and must be between 8 and 28 characters and contain
+      at least one capital letter
+    NoEcho: true
+    Type: String
+    MinLength: 8
+    MaxLength: 28
+    AllowedPattern: '[a-zA-Z0-9!^*\-_+]*'
+    ConstraintDescription: Can only contain alphanumeric characters or the following
+      special characters !^*-_+, between 8 and 28 characters
   LogBucket:
     Type: String
     Description: Bucket to write logs to
@@ -127,15 +146,84 @@ Mappings:
     Defaults:
       ArchiveTier: GLACIER
     WebContent:
-      Logging: web-content/
+      LogPrefix: web-content/
+  Elb:
+    Defaults:
+      HealthCheckGracePeriod: 300
   Database:
     Defaults:
       User: hitrust-example-db-user
+  AWSAMIRegionMap:
+    AMI:
+      AMZNLINUX2HVM: amzn2-ami-hvm-2.0.20190618-x86_64-gp2 
+    ap-east-1:
+      AMZNLINUX2HVM: ami-570c7726
+      InstanceTypeDatabase: db.m5.large
+    ap-northeast-1:
+      AMZNLINUX2HVM: ami-0ebe863c3d16bca9d
+      InstanceTypeDatabase: db.m5.large
+    ap-northeast-1:
+      AMZNLINUX2HVM: ami-0c3fd0f5d33134a76
+      InstanceTypeDatabase: db.m5.large
+    ap-northeast-2:
+      AMZNLINUX2HVM: ami-095ca789e0549777d
+      InstanceTypeDatabase: db.m5.large
+    ap-northeast-3:
+      AMZNLINUX2HVM: ami-0ee933a7f81beb045
+      InstanceTypeDatabase: db.m5.large
+    ap-south-1:
+      AMZNLINUX2HVM: ami-0d2692b6acea72ee6
+      InstanceTypeDatabase: db.m5.large
+    ap-southeast-1:
+      AMZNLINUX2HVM: ami-01f7527546b557442
+      InstanceTypeDatabase: db.m5.large
+    ap-southeast-2:
+      AMZNLINUX2HVM: ami-0dc96254d5535925f
+      InstanceTypeDatabase: db.m5.large
+    ca-central-1:
+      AMZNLINUX2HVM: ami-0d4ae09ec9361d8ac
+      InstanceTypeDatabase: db.m5.large
+    eu-central-1:
+      AMZNLINUX2HVM: ami-0cc293023f983ed53
+      InstanceTypeDatabase: db.m5.large
+    eu-north-1:
+      AMZNLINUX2HVM: ami-3f36be41 
+      InstanceTypeDatabase: db.m5.large
+    eu-west-1:
+      AMZNLINUX2HVM: ami-0bbc25e23a7640b9b
+      InstanceTypeDatabase: db.m5.large
+    eu-west-2:
+      AMZNLINUX2HVM: ami-0d8e27447ec2c8410
+      InstanceTypeDatabase: db.m5.large
+    eu-west-3:
+      AMZNLINUX2HVM: ami-0adcddd3324248c4c
+      InstanceTypeDatabase: db.m5.large
+    sa-east-1:
+      AMZNLINUX2HVM: ami-058943e7d9b9cabfb
+      InstanceTypeDatabase: db.m3.large
+    us-east-1:
+      AMZNLINUX2HVM: ami-0b898040803850657
+      InstanceTypeDatabase: db.m5.large
+    us-east-2:
+      AMZNLINUX2HVM: ami-0d8f6eb4f641ef691
+      InstanceTypeDatabase: db.m5.large
+    us-gov-east-1:
+      AMZNLINUX2HVM: ami-a2d938d3
+      InstanceTypeDatabase: db.m3.large
+    us-gov-west-1:
+      AMZNLINUX2HVM: ami-e9a9d388
+      InstanceTypeDatabase: db.m3.large
+    us-west-1:
+      AMZNLINUX2HVM: ami-056ee704806822732
+      InstanceTypeDatabase: db.m5.large
+    us-west-2:
+      AMZNLINUX2HVM: ami-082b5a644766e0e6f
+      InstanceTypeDatabase: db.m5.large
 
 Conditions:
-  GovCloudContition: !Or [ !Equals [ !Ref AWS::Region, 'us-gov-west-1'], !Equals [ !Ref AWS::Region, 'us-gov-east-1'] ]
-  GovCloudEastCondition: !Equals [ !Ref AWS::Region, 'us-gov-east-1']
-  GovCloudWestCondition: !Equals [ !Ref AWS::Region, 'us-gov-west-1']
+  GovCloudContition: !Or [ !Equals [ !Ref "AWS::Region", 'us-gov-west-1'], !Equals [ !Ref "AWS::Region", 'us-gov-east-1'] ]
+  GovCloudEastCondition: !Equals [ !Ref "AWS::Region", 'us-gov-east-1']
+  GovCloudWestCondition: !Equals [ !Ref "AWS::Region", 'us-gov-west-1']
 
 Resources:
   # Create the Elb
@@ -152,7 +240,7 @@ Resources:
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         QSTagKey: !Ref QSTagKey
         QSTagValue: !Ref QSTagValue
-        SourceCIDR: !Ref SourceCIDR
+        SourceCIDR: !Ref SourceCidr
         SSLCertificateARN: !Ref SSLCertificateARN
         VpcCidr: !Ref VpcCidr
         VpcId: !Ref VpcId
@@ -183,7 +271,7 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/database.template
       Parameters:
-        DBInstanceClass: !Ref DBInstanceClass
+        DBInstanceClass: !FindInMap [ Database, !Ref "AWS::Region", "InstanceType"]
         DBMasterUser: !FindInMap [ Database, Defaults, User]
         DBPassword: !Ref DBPassword
         DBPrivateSubnets: !Ref PrivateSubnetDBIds
@@ -209,7 +297,7 @@ Resources:
             TransitionInDays: 90
             StorageClass: !FindInMap [ Storage, Defaults, ArchiveTier ]
       LoggingConfiguration:
-        DestinationBucket: !Ref LoggingBucket
+        DestinationBucket: !Ref LogBucket
         LogPrefix: !FindInMap [ Storage, WebContent, LogPrefix ]
       Tags:
       - Key: !Ref QSTagKey
@@ -339,12 +427,13 @@ Resources:
               owner: root
               group: root
             /var/www/html/wordpress/wp-config.php:
-              content: !Sub |
+              content: !Sub 
+              - | 
                 <?php
                 define('DB_NAME', '${AppDatabase.Outputs.DBName}');
                 define('DB_USER', '${DBUser}');
                 define('DB_PASSWORD', '${DBPassword}');
-                define('DB_HOST', '${AppDatabase.EndpointAddress}');
+                define('DB_HOST', '${AppDatabase.Outputs.EndpointAddress}');
                 define('FORCE_SSL_ADMIN', true);
                 if (strpos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false) { $_SERVER['HTTPS']='on'; }
                 define('DB_CHARSET', 'utf8');
@@ -357,6 +446,7 @@ Resources:
                   define('ABSPATH', dirname(__FILE__) . '/');
 
                 require_once(ABSPATH . 'wp-settings.php');
+              - DBUser: !FindInMap [ Database, Defaults, User ]
               mode: '000644'
               owner: root
               group: root
@@ -368,7 +458,7 @@ Resources:
     Properties:
       ImageId: !Ref AppImageId
       IamInstanceProfile: !Ref AppInstanceProfile
-      InstanceType: !Ref AppInstanceType
+      InstanceType: !FindInMap [ EC2, !Ref "AWS::Region", InstanceType ]
       BlockDeviceMappings:
       - DeviceName: /dev/xvda
         Ebs:
@@ -381,7 +471,7 @@ Resources:
 #          VolumeType: gp2
 #          Encrypted: true
       SecurityGroups:
-      - !Ref AppSecurityGroup
+      - !Ref AppInstanceSecurityGroup
       UserData:
         Fn::Base64: 
           !Sub 
@@ -466,7 +556,7 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     DependsOn: AppLaunchConfig
     Properties:
-      HealthCheckGracePeriod: !FindInMap [ Defaults, Elb, HealthCheckGracePeriod ]
+      HealthCheckGracePeriod: !FindInMap [ Elb, Defaults, HealthCheckGracePeriod ]
       HealthCheckType: ELB
       MinSize: 2
       MaxSize: 4
@@ -474,7 +564,7 @@ Resources:
       - Key: !Ref QSTagKey
         Value: !Ref QSTagValue
         PropagateAtLaunch: true
-      TargetGroupARNs: !Ref ElbTargetGroups
+      TargetGroupARNs: !GetAtt ElbStack.Outputs.ElbTargetGroupHTTPS
       VPCZoneIdentifier: !Ref PrivateSubnetAppIds
       CreationPolicy:
         ResourceSignal:

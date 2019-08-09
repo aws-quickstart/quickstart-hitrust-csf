@@ -6,6 +6,9 @@ Description: This template creates an S3 bucket in the same region where the sta
   is launched and copy the Lambda functions code from original bucket to the new bucket.
   (qs-1op312ie1)
 Parameters:
+  LogBucket:
+    Type: String
+    Description: Log Bucket
   QSS3BucketName:
     AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
     ConstraintDescription: Quick Start bucket name can include numbers, lowercase
@@ -35,7 +38,7 @@ Parameters:
 Mappings:
   Storage:
     LambdaZips:
-      Logging: lambda-zips/
+      LogPrefix: lambda-zips/
 
 Resources:
   CopyObjects:
@@ -172,7 +175,7 @@ Resources:
         - ServerSideEncryptionByDefault:
             SSEAlgorithm: AES256
       LoggingConfiguration:
-        DestinationBucket: !Ref LoggingBucket
+        DestinationBucket: !Ref LogBucket
         LogPrefix: !FindInMap [ Storage, LambdaZips, LogPrefix ]
       Tags:
       - Key: !Ref QSTagKey

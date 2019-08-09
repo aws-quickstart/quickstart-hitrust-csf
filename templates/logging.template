@@ -1,92 +1,95 @@
 ---
-  AWSTemplateFormatVersion: '2010-09-09'
-  Description: CloudFormation Template for basic logging functionality. Sets up ELB logging and Config if 
-    the Config Recorder and Config Delivery Channel are not yet set up.
-  
-  Parameters:
-    ConfigRecorderName:
-      Type: String
-      Default: ""
-      Description: Config Recorder. Empty string will create a new Config Recorder.
-    ConfigDeliveryChannelName:
-      Type: String
-      Default: ""
-      Description: Config Delivery Channel. Must have if Config Recorder specified.
-    QSS3BucketName:
-      AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
-      ConstraintDescription: Quick Start bucket name can include numbers, lowercase
-        letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen
-        (-).
-      Default: aws-quickstart
-      Description: S3 bucket name for the Quick Start assets. This string can include
-        numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start
-        or end with a hyphen (-).
-      Type: String
-    QSS3KeyPrefix:
-      AllowedPattern: "^[0-9a-zA-Z-/]*$"
-      ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
-        uppercase letters, hyphens (-), and forward slash (/).
-      Default: quickstart-tableau-server-healthcare/
-      Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
-        can include numbers, lowercase letters, uppercase letters, hyphens (-), and
-        forward slash (/).
-      Type: String
-    QSTagKey:
-      Type: String
-      Description: Tag key to identify resources from this Quick Start
-    QSTagValue:
-      Type: String
-      Description: Tag value to identify resources from this Quick Start
-  
-  Mappings:
-    ElbLogging:
-      us-east-1: 
-        Principal: '127311923021'
-      us-east-2: 
-        Principal: '033677994240'
-      us-west-1: 
-        Principal: '027434742980'
-      us-west-2: 
-        Principal: '797873946194'
-      ca-central-1:
-        Principal: '985666609251'
-      eu-central-1:
-        Principal: '054676820928'
-      eu-west-1:
-        Principal: '156460612806'
-      eu-west-2:
-        Principal: '652711504416'
-      eu-west-3:
-        Principal: '009996457667'
-      eu-north-1:
-        Principal: '897822967062'
-      ap-east-1:
-        Principal: '754344448648'
-      ap-northeast-1:
-        Principal: '582318560864'
-      ap-northeast-2:
-        Principal: '600734575887'
-      ap-northeast-3:
-        Principal: '383597477331'
-      ap-southeast-1:
-        Principal: '114774131450'
-      ap-southeast-2:
-        Principal: '783225319266'
-      ap-south-1:
-        Principal: '718504428378'
-      me-south-1:
-        Principal: '076674570225'
-      sa-east-1:
-        Principal: '507241528517'
-      us-gov-west-1:
-        Princiapl: '048591011584'
-      us-gov-east-1:
-        Principal: '190560391635'
-      cn-north-1:
-        Principal: '638102146993'
-      cn-northwest-1:
-        Principal: '037604701340'
-  
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation Template for basic logging functionality. Sets up ELB logging and Config if 
+  the Config Recorder and Config Delivery Channel are not yet set up.
+
+Parameters:
+  ConfigRecorderName:
+    Type: String
+    Default: ""
+    Description: Config Recorder. Empty string will create a new Config Recorder.
+  ConfigDeliveryChannelName:
+    Type: String
+    Default: ""
+    Description: Config Delivery Channel. Must have if Config Recorder specified.
+  QSS3BucketName:
+    AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription: Quick Start bucket name can include numbers, lowercase
+      letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen
+      (-).
+    Default: aws-quickstart
+    Description: S3 bucket name for the Quick Start assets. This string can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start
+      or end with a hyphen (-).
+    Type: String
+  QSS3KeyPrefix:
+    AllowedPattern: "^[0-9a-zA-Z-/]*$"
+    ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
+      uppercase letters, hyphens (-), and forward slash (/).
+    Default: quickstart-tableau-server-healthcare/
+    Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
+      can include numbers, lowercase letters, uppercase letters, hyphens (-), and
+      forward slash (/).
+    Type: String
+  QSTagKey:
+    Type: String
+    Description: Tag key to identify resources from this Quick Start
+  QSTagValue:
+    Type: String
+    Description: Tag value to identify resources from this Quick Start
+
+Mappings:
+  CloudTrail:
+    S3:
+      LogPrefix: cloud-trail/hitrust
+  ElbLogging:
+    us-east-1: 
+      Principal: '127311923021'
+    us-east-2: 
+      Principal: '033677994240'
+    us-west-1: 
+      Principal: '027434742980'
+    us-west-2: 
+      Principal: '797873946194'
+    ca-central-1:
+      Principal: '985666609251'
+    eu-central-1:
+      Principal: '054676820928'
+    eu-west-1:
+      Principal: '156460612806'
+    eu-west-2:
+      Principal: '652711504416'
+    eu-west-3:
+      Principal: '009996457667'
+    eu-north-1:
+      Principal: '897822967062'
+    ap-east-1:
+      Principal: '754344448648'
+    ap-northeast-1:
+      Principal: '582318560864'
+    ap-northeast-2:
+      Principal: '600734575887'
+    ap-northeast-3:
+      Principal: '383597477331'
+    ap-southeast-1:
+      Principal: '114774131450'
+    ap-southeast-2:
+      Principal: '783225319266'
+    ap-south-1:
+      Principal: '718504428378'
+    me-south-1:
+      Principal: '076674570225'
+    sa-east-1:
+      Principal: '507241528517'
+    us-gov-west-1:
+      Princiapl: '048591011584'
+    us-gov-east-1:
+      Principal: '190560391635'
+    cn-north-1:
+      Principal: '638102146993'
+    cn-northwest-1:
+      Principal: '037604701340'
+
 Conditions:
   CreateConfig: !And [ !Equals [ !Ref ConfigRecorderName, '' ], !Equals [ !Ref ConfigDeliveryChannelName, '' ] ]
 
@@ -143,7 +146,8 @@ Resources:
         Statement:
         - Sid: "Enable IAM User Permissions"
           Effect: "Allow"
-          Principal: AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+          Principal: 
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
           Action: "kms:*"
           Resource: "*"
       Tags:
@@ -160,7 +164,7 @@ Resources:
       IsLogging: true
       KMSKeyId: !Ref CloudTrailHitrustQSKey
       S3BucketName: !Ref LogBucket
-      S3KeyPrefix: 
+      S3KeyPrefix: !FindInMap [ CloudTrail, S3, LogPrefix ]
       Tags:
       - Key: !Ref QSTagKey
         Value: !Ref QSTagValue
@@ -204,7 +208,22 @@ Resources:
             Resource:
             - !GetAtt LogBucket.Arn
             - !Sub arn:aws:s3:::${LogBucket}/*
-
+            
+  ConfigRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - "config.amazonaws.com"
+          Action:
+            - "sts:AssumeRole"
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSConfigRulesExecutionRole
+      - arn:aws:iam::aws:policy/service-role/AWSConfigRole
   ConfigRolePolicy:
     Type: AWS::IAM::Policy
     Properties:
