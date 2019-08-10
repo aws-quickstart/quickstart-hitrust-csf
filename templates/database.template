@@ -71,7 +71,7 @@ Resources:
       PubliclyAccessible: false
       StorageEncrypted: true
       MasterUsername: !Ref DBMasterUser
-      MasterPassword: !Ref DBPassword
+      MasterUserPassword: !Ref DBPassword
       Tags:
       - Key: !Ref QSTagKey
         Value: !Ref QSTagValue

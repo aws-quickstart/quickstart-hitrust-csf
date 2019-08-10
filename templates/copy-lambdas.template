@@ -175,8 +175,8 @@ Resources:
         - ServerSideEncryptionByDefault:
             SSEAlgorithm: AES256
       LoggingConfiguration:
-        DestinationBucket: !Ref LogBucket
-        LogPrefix: !FindInMap [ Storage, LambdaZips, LogPrefix ]
+        DestinationBucketName: !Ref LogBucket
+        LogFilePrefix: !FindInMap [ Storage, LambdaZips, LogPrefix ]
       Tags:
       - Key: !Ref QSTagKey
         Value: !Ref QSTagValue

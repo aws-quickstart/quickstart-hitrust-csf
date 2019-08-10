@@ -174,7 +174,6 @@ Resources:
     Type: AWS::Config::ConfigRule
     Properties:
       Description: Checks whether EBS volumes that are in an attached state are encrypted.
-      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
       Scope:
         ComplianceResourceTypes:
         - AWS::EC2::Volume
@@ -199,12 +198,11 @@ Resources:
     Type: AWS::Config::ConfigRule
     Properties:
       Description: Checks whether the Application Load Balancers and the Classic Load Balancers have logging enabled.
-      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
       InputParameters:
         s3BucketNames: !Ref LogBucket
       Scope:
         ComplianceResourceTypes:
-        - AWS::ElasticLoadBalancing:LoadBalancer
+        - AWS::ElasticLoadBalancing::LoadBalancer
         - AWS::ElasticLoadBalancingV2::LoadBalancer
       Source:
         Owner: AWS
@@ -328,9 +326,8 @@ Resources:
     Type: AWS::Config::ConfigRule
     Properties:
       Description: 'Checks whether the default version of AWS Identity and Access Management (IAM) policies do not have administrator access. If any statement has "Effect": "Allow" with "Action": "*" over "Resource": "*", the rule is NON_COMPLIANT.'
-      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
       Scope:
-        ComplianceResourcetypes:
+        ComplianceResourceTypes:
         - AWS::IAM::Policy
       Source:
         Owner: AWS

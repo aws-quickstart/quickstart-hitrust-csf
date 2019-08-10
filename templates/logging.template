@@ -133,36 +133,33 @@ Resources:
             - !FindInMap [ ElbLogging, !Ref "AWS::Region" , Principal ]
           Action: "s3:PutObject"
           Resource: !Sub arn:aws:s3:::${LogBucket}/*
-        
-  CloudTrailHitrustQSKey:
-    Type: AWS::KMS::Key
-    Properties:
-      Description: KMS Key for encrypting CloudTrail Trail
-      Enabled: true
-      EnableKeyRotation: true
-      KeyPolicy:
-        Version: "2012-10-17"
-        Id: "key-default-1"
-        Statement:
-        - Sid: "Enable IAM User Permissions"
-          Effect: "Allow"
-          Principal: 
-            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
-          Action: "kms:*"
-          Resource: "*"
-      Tags:
-        - Key: !Ref QSTagKey
-          Value: !Ref QSTagValue
+        - Sid: AllowCloudTrailAclCheck
+          Effect: Allow
+          Principal:
+            Service: cloudtrail.amazonaws.com
+          Action: s3:GetBucketAcl
+          Resource: !Sub arn:aws:s3:::${LogBucket}
+        - Sid: AllowCloudTrailWrite
+          Effect: Allow
+          Principal:
+            Service: cloudtrail.amazonaws.com
+          Action: s3:PutObject
+          Resource: !Sub
+            - arn:aws:s3:::${LogBucket}/${LogPrefix}/AWSLogs/${AWS::AccountId}/*
+            - { LogPrefix: !FindInMap [ CloudTrail, S3, LogPrefix ] }
+          Condition:
+            StringEquals:
+              "s3:x-amz-acl": bucket-owner-full-control
+
   CloudTrailHitrustQS:
     Type: AWS::CloudTrail::Trail
     DependsOn:
     - LogBucket
-    - CloudTrailHitrustQSKey
+    - LogBucketPolicy
     Properties:
       EnableLogFileValidation: true
       IncludeGlobalServiceEvents: true
       IsLogging: true
-      KMSKeyId: !Ref CloudTrailHitrustQSKey
       S3BucketName: !Ref LogBucket
       S3KeyPrefix: !FindInMap [ CloudTrail, S3, LogPrefix ]
       Tags:
@@ -175,13 +172,15 @@ Resources:
     DependsOn:
     - CleanupRole
     Properties:
-      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/clean-bucket.yaml
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/clean-bucket.template
       Parameters:
         Bucket: !Ref LogBucket
         ServiceToken: !GetAtt CleanupRole.Arn
-        Tags:
-        - Key: QSTagKey
-        - Value: QSTagValue
+        QSTagKey: !Ref QSTagKey
+        QSTagValue: !Ref QSTagValue
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
   CleanupRole:
     Type: AWS::IAM::Role
     Properties:
@@ -295,11 +294,11 @@ Resources:
     - ConfigRole
     - ConfigRolePolicy
     Properties:
-      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/config-rules.yaml
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/config-rules.template
       Parameters:
         ConfigRecorder: !If [ CreateConfig, !Ref ConfigRecorder, !Ref ConfigRecorderName ]
         ConfigDeliveryChannel: !If [ CreateConfig, !Ref ConfigDeliveryChannel, !Ref ConfigDeliveryChannelName ]
-        LogBucketName: !Ref LogBucket
+        LogBucket: !Ref LogBucket
         QSTagKey: !Ref QSTagKey
         QSTagValue: !Ref QSTagValue
       Tags:

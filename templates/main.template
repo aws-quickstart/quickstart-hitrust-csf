@@ -36,6 +36,10 @@ Metadata:
       - QSS3KeyPrefix
       - QSTagKey
       - QSTagValue
+    - Label:
+        default: Database Configuration
+      Parameters:
+      - DBPassword
     ParameterLabels:
       AWSHostedZoneID:
         default: DNS Zone ID
@@ -47,8 +51,6 @@ Metadata:
         default: AWS Config Delivery Channel ARN
       DBPassword:
         default: Database Password
-      DBUser:
-        default: Database User
       QSS3BucketName:
         default: Quick Start S3 Bucket Name
       QSS3KeyPrefix:
@@ -57,7 +59,8 @@ Metadata:
 Parameters:
   AWSHostedZoneID:
     Description: DNS Zone ID to contain the server's DNS entry.
-    Type: AWS::Route53::HostedZone::Id
+    # Type: AWS::Route53::HostedZone::Id
+    Type: String
   AWSPublicFQDN:
     Description: Web app will be reachable at this address.
     Type: String
@@ -148,16 +151,13 @@ Mappings:
       Public2: 10.101.101.0/24
       VPC: 10.101.0.0/16
     Bastion:
-      InstanceType: t3.medium
+      InstanceType: t2.medium
   # Need to update
   AWSAMIRegionMap:
     AMI:
       AMZNLINUX2HVM: amzn2-ami-hvm-2.0.20190618-x86_64-gp2 
     ap-east-1:
       AMZNLINUX2HVM: ami-570c7726
-      InstanceTypeDatabase: db.m5.large
-    ap-northeast-1:
-      AMZNLINUX2HVM: ami-0ebe863c3d16bca9d
       InstanceTypeDatabase: db.m5.large
     ap-northeast-1:
       AMZNLINUX2HVM: ami-0c3fd0f5d33134a76
@@ -340,6 +340,7 @@ Resources:
         AWSHostedZoneID: !Ref AWSHostedZoneID
         AWSPublicFQDN: !Ref AWSPublicFQDN
         BastionSecurityGroup: !GetAtt Bastion.Outputs.BastionSecurityGroupID
+        DBPassword: !Ref DBPassword
         LogBucket: !GetAtt Logging.Outputs.LogBucket
         PublicSubnetIds:  !Sub "${ProductionVpc.Outputs.PublicSubnet1ID},${ProductionVpc.Outputs.PublicSubnet2ID}"
         PrivateSubnetAppIds: !Sub "${ProductionVpc.Outputs.PrivateSubnet1AID},${ProductionVpc.Outputs.PrivateSubnet2AID}"

@@ -65,9 +65,6 @@ Metadata:
       VpcId:
         default: VPC ID
 Parameters:
-  AppImageId:
-    Description: App Instance AMII ID
-    Type: AWS::EC2::Image::Id
   AWSHostedZoneID:
     Description: DNS Zone ID to contain the server's DNS entry.
     Type: String
@@ -160,9 +157,6 @@ Mappings:
       AMZNLINUX2HVM: ami-570c7726
       InstanceTypeDatabase: db.m5.large
     ap-northeast-1:
-      AMZNLINUX2HVM: ami-0ebe863c3d16bca9d
-      InstanceTypeDatabase: db.m5.large
-    ap-northeast-1:
       AMZNLINUX2HVM: ami-0c3fd0f5d33134a76
       InstanceTypeDatabase: db.m5.large
     ap-northeast-2:
@@ -221,7 +215,7 @@ Mappings:
       InstanceTypeDatabase: db.m5.large
 
 Conditions:
-  GovCloudContition: !Or [ !Equals [ !Ref "AWS::Region", 'us-gov-west-1'], !Equals [ !Ref "AWS::Region", 'us-gov-east-1'] ]
+  GovCloudCondition: !Or [ !Equals [ !Ref "AWS::Region", 'us-gov-west-1'], !Equals [ !Ref "AWS::Region", 'us-gov-east-1'] ]
   GovCloudEastCondition: !Equals [ !Ref "AWS::Region", 'us-gov-east-1']
   GovCloudWestCondition: !Equals [ !Ref "AWS::Region", 'us-gov-west-1']
 
@@ -230,7 +224,7 @@ Resources:
   ElbStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/encrypted-elb.yaml
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/elb.template
       Parameters:
         AWSHostedZoneID: !Ref AWSHostedZoneID
         AWSPublicFQDN: !Ref AWSPublicFQDN
@@ -271,7 +265,7 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/database.template
       Parameters:
-        DBInstanceClass: !FindInMap [ Database, !Ref "AWS::Region", "InstanceType"]
+        DBInstanceClass: !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", InstanceTypeDatabase ]
         DBMasterUser: !FindInMap [ Database, Defaults, User]
         DBPassword: !Ref DBPassword
         DBPrivateSubnets: !Ref PrivateSubnetDBIds
@@ -297,8 +291,8 @@ Resources:
             TransitionInDays: 90
             StorageClass: !FindInMap [ Storage, Defaults, ArchiveTier ]
       LoggingConfiguration:
-        DestinationBucket: !Ref LogBucket
-        LogPrefix: !FindInMap [ Storage, WebContent, LogPrefix ]
+        DestinationBucketName: !Ref LogBucket
+        LogFilePrefix: !FindInMap [ Storage, WebContent, LogPrefix ]
       Tags:
       - Key: !Ref QSTagKey
         Value: !Ref QSTagValue
@@ -348,17 +342,15 @@ Resources:
           - sts:AssumeRole
       Path: /
       Policies:
-      - PolicyName: S3Assets
-        Policies:
-          - PolicyName: CreateTags
-            PolicyDocument:
-              Version: 2012-10-17
-              Statement:
-              - Effect: Allow
-                Action:
-                - ec2:Describe*
-                - ec2:CreateTags
-                Resource: "*"
+      - PolicyName: CreateTags
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - ec2:Describe*
+            - ec2:CreateTags
+            Resource: "*"
   AppInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -456,9 +448,10 @@ Resources:
                 enabled: true
                 ensureRunning: true
     Properties:
-      ImageId: !Ref AppImageId
+      ImageId: !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", AMZNLINUX2HVM ]
       IamInstanceProfile: !Ref AppInstanceProfile
-      InstanceType: !FindInMap [ EC2, !Ref "AWS::Region", InstanceType ]
+      #InstanceType: !FindInMap [ EC2, !Ref "AWS::Region", InstanceType ]
+      InstanceType: m4.large
       BlockDeviceMappings:
       - DeviceName: /dev/xvda
         Ebs:
@@ -564,12 +557,15 @@ Resources:
       - Key: !Ref QSTagKey
         Value: !Ref QSTagValue
         PropagateAtLaunch: true
-      TargetGroupARNs: !GetAtt ElbStack.Outputs.ElbTargetGroupHTTPS
+      LaunchConfigurationName: !Ref AppLaunchConfig
+      TargetGroupARNs: 
+      - !GetAtt ElbStack.Outputs.ElbTargetGroupHTTPS
       VPCZoneIdentifier: !Ref PrivateSubnetAppIds
-      CreationPolicy:
-        ResourceSignal:
-          Count: 1
-          Timeout: PT15M
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT15M
+
   AutoScalingUpApp:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:

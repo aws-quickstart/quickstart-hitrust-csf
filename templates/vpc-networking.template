@@ -79,21 +79,21 @@ Resources:
     Type: AWS::EC2::Route
     DependsOn: VpcPeeringConnection
     Properties:
-      RouteTableId: !Ref ManagementRouteTablePrivateA
+      RouteTableId: !Ref ProductionRouteTablePrivateA
       VpcPeeringConnectionId: !Ref VpcPeeringConnection
       DestinationCidrBlock: !Ref ManagementVpcCidr
   RouteProductionManagementPrivateB:
     Type: AWS::EC2::Route
     DependsOn: VpcPeeringConnection
     Properties:
-      RouteTableId: !Ref ManagementRouteTablePrivateB
+      RouteTableId: !Ref ProductionRouteTablePrivateB
       VpcPeeringConnectionId: !Ref VpcPeeringConnection
       DestinationCidrBlock: !Ref ManagementVpcCidr
   RouteProductionManagementPublic:
     Type: AWS::EC2::Route
     DependsOn: VpcPeeringConnection
     Properties:
-      RouteTableId: !Ref ManagementRouteTablePrivateA
+      RouteTableId: !Ref ProductionRouteTablePublic
       VpcPeeringConnectionId: !Ref VpcPeeringConnection
       DestinationCidrBlock: !Ref ManagementVpcCidr
   
