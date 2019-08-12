@@ -30,7 +30,7 @@ def send(event, context, responseStatus, responseData, physicalResourceId, reaso
 
     json_responseBody = json.dumps(responseBody)
    
-    print "Response body:\n" + json_responseBody
+    print ("Response body:\n" + json_responseBody)
 
     headers = {
         'content-type' : '', 
@@ -41,6 +41,6 @@ def send(event, context, responseStatus, responseData, physicalResourceId, reaso
         response = requests.put(responseUrl,
                                 data=json_responseBody,
                                 headers=headers)
-        print "Status code: " + response.reason
+        print ("Status code: " + response.reason)
     except Exception as e:
-        print "send(..) failed executing requests.put(..): " + str(e)
+        print ("send(..) failed executing requests.put(..): " + str(e))

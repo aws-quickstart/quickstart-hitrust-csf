@@ -110,7 +110,7 @@ Parameters:
     AllowedPattern: "^[0-9a-zA-Z-/]*$"
     ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
       uppercase letters, hyphens (-), and forward slash (/).
-    Default: quickstart-tableau-server-healthcare/
+    Default: quickstart-hitrust-csf
     Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
       can include numbers, lowercase letters, uppercase letters, hyphens (-), and
       forward slash (/).
@@ -327,7 +327,21 @@ Resources:
           Condition:
             StringNotEquals:
               s3:x-amz-server-side-encryption: AES256
-  
+  CleanupWebBucket:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+    - WebContentBucket
+    Properties:
+      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/clean-bucket.template
+      Parameters:
+        Bucket: !Ref WebContentBucket
+        QSTagKey: !Ref QSTagKey
+        QSTagValue: !Ref QSTagValue
+      Tags:
+      - Key: !Ref QSTagKey
+        Value: !Ref QSTagValue
+
+
   AppInstanceRole:
     Type: AWS::IAM::Role
     Properties:

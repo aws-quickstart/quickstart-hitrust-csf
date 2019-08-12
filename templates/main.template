@@ -314,8 +314,8 @@ Resources:
   Bastion:
     Type: AWS::CloudFormation::Stack
     DependsOn:
-    - VpcNetworking
     - ManagementVpc
+    - VpcNetworking
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-linux-bastion/templates/linux-bastion.template
       Parameters:
@@ -324,6 +324,8 @@ Resources:
         RemoteAccessCIDR: !Ref BastionAccessCidr
         PublicSubnet1ID: !GetAtt ManagementVpc.Outputs.PublicSubnet1ID
         PublicSubnet2ID: !GetAtt ManagementVpc.Outputs.PublicSubnet2ID
+#        QSS3BucketName: !Ref QSS3BucketName
+#        QSS3KeyPrefix: !Ref QSS3KeyPrefix
         VPCID: !GetAtt ManagementVpc.Outputs.VPCID
       Tags:
       - Key: !Ref QSTagKey
@@ -345,6 +347,8 @@ Resources:
         PublicSubnetIds:  !Sub "${ProductionVpc.Outputs.PublicSubnet1ID},${ProductionVpc.Outputs.PublicSubnet2ID}"
         PrivateSubnetAppIds: !Sub "${ProductionVpc.Outputs.PrivateSubnet1AID},${ProductionVpc.Outputs.PrivateSubnet2AID}"
         PrivateSubnetDBIds: !Sub "${ProductionVpc.Outputs.PrivateSubnet1BID},${ProductionVpc.Outputs.PrivateSubnet2BID}"
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
         QSTagKey: !Ref QSTagKey
         QSTagValue: !Sub ${QSTagValue}-${AWS::StackName}
         SourceCidr: !Ref SourceCidr

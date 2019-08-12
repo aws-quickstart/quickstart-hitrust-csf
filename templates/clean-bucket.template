@@ -5,9 +5,6 @@ Parameters:
   Bucket:
     Description: The Bucket required for the custom resource to function.
     Type: String
-  ServiceToken:
-    Description: The Role ARN required to execute the Custom Resource.
-    Type: String
   QSTagKey:
     Type: String
     Description: Tag key to identify resources from this Quick Start.
@@ -15,6 +12,36 @@ Parameters:
     Type: String
     Description: Tag value to identify resources from this Quick Start.
 Resources:
+  CleanupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: DeletePolicy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Sid: CleanupBucket
+            Effect: Allow
+            Action:
+            - s3:PutObject
+            - s3:DeleteObject
+            - s3:GetObject
+            - s3:ListBucket
+            - s3:ListBucketVersions
+            - s3:DeleteObjectVersion
+            - s3:GetObjectVersion
+            - s3:GetBucketVersioning
+            Resource:
+            - !Sub arn:aws:s3:::${Bucket}
+            - !Sub arn:aws:s3:::${Bucket}/*
   CleanUpS3Bucket:
     Properties:
       DestBucket: !Ref Bucket
@@ -101,6 +128,6 @@ Resources:
                   cfnresponse.send(event, context, status, {}, None)
       Description: Empty the S3 Bucket
       Handler: index.handler
-      Role: !Ref ServiceToken
+      Role: !GetAtt CleanupRole.Arn
       Runtime: python3.7
       Timeout: 600 # 10 min timeout

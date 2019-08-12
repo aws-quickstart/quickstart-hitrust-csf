@@ -74,6 +74,8 @@ Resources:
       Parameters:
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        QSTagKey: !Ref QSTagKey
+        QSTagValue: !Ref QSTagValue
         DomainName: !Ref AWSPublicFQDN
         HostedZoneID: !Ref AWSHostedZoneID
         LogBucket: !Ref LogBucket

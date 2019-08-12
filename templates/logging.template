@@ -98,6 +98,7 @@ Resources:
   LogBucket:
     Type: AWS::S3::Bucket
     Properties:
+      AccessControl: LogDeliveryWrite
       BucketEncryption: 
         ServerSideEncryptionConfiguration:
         - ServerSideEncryptionByDefault:
@@ -170,43 +171,16 @@ Resources:
   CleanupLogBucket:
     Type: AWS::CloudFormation::Stack
     DependsOn:
-    - CleanupRole
+    - LogBucket
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/clean-bucket.template
       Parameters:
         Bucket: !Ref LogBucket
-        ServiceToken: !GetAtt CleanupRole.Arn
         QSTagKey: !Ref QSTagKey
         QSTagValue: !Ref QSTagValue
       Tags:
       - Key: !Ref QSTagKey
         Value: !Ref QSTagValue
-  CleanupRole:
-    Type: AWS::IAM::Role
-    Properties:
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service: lambda.amazonaws.com
-          Action: sts:AssumeRole
-      Policies:
-      - PolicyName: ConfigPolicy
-        PolicyDocument:
-          Version: 2012-10-17
-          Statement:
-          - Sid: Logging
-            Effect: Allow
-            Action: logs:*
-            Resource: '*'
-          - Sid: S3Bucket
-            Effect: Allow
-            Action: s3:*
-            Resource:
-            - !GetAtt LogBucket.Arn
-            - !Sub arn:aws:s3:::${LogBucket}/*
             
   ConfigRole:
     Type: AWS::IAM::Role
