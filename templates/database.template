@@ -31,6 +31,7 @@ Mappings:
     Defaults:
       Engine: MySQL
       AllocatedStorage: 50
+      BackupRetention: 35
 
 Resources:
   # Configure MySQL Database
@@ -64,6 +65,8 @@ Resources:
     - DBSecurityGroup
     Properties:
       AllocatedStorage: !FindInMap [ RDS, Defaults, AllocatedStorage]
+      BackupRetentionPeriod: !FindInMap [ RDS, Defaults, BackupRetention ]
+      CopyTagsToSnapshot: true
       DBInstanceClass: !Ref DBInstanceClass
       DBSubnetGroupName: !Ref DBSubnetGroup
       Engine: !FindInMap [ RDS, Defaults, Engine]

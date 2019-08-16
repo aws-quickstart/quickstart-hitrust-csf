@@ -238,6 +238,10 @@ Resources:
         SSLCertificateARN: !Ref SSLCertificateARN
         VpcCidr: !Ref VpcCidr
         VpcId: !Ref VpcId
+      Tags:
+        - Key: !Ref QSTagKey
+          Value: !Ref QSTagValue
+    
 
   AppInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -268,7 +272,7 @@ Resources:
         DBInstanceClass: !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", InstanceTypeDatabase ]
         DBMasterUser: !FindInMap [ Database, Defaults, User]
         DBPassword: !Ref DBPassword
-        DBPrivateSubnets: !Ref PrivateSubnetDBIds
+        DBPrivateSubnets: !Join [ "," , !Ref PrivateSubnetDBIds ]
         SecurityGroupAppInstance: !Ref AppInstanceSecurityGroup
         VpcId: !Ref VpcId
       Tags:
@@ -340,7 +344,6 @@ Resources:
       Tags:
       - Key: !Ref QSTagKey
         Value: !Ref QSTagValue
-
 
   AppInstanceRole:
     Type: AWS::IAM::Role
