@@ -1,0 +1,235 @@
+<html>
+<head>
+<style>
+	body {
+		margin: auto;
+		font-family: HelveticaNeue,Helvetica,Helvetica,Arial,sans-serif;
+	}
+
+	#top_bar {
+		height: 30px;
+		width: 100%;
+		background-color: black;
+	}
+	
+	#amazon_logo {
+		float: left;
+		padding-left: 20px;
+	}
+	
+	.section_header {
+		font-size: 1.5em;
+		font-weight: 500;
+		padding-bottom: 20px;
+		color: #1F3D5C;
+	}
+	
+	.section_text {
+		font-size: .9em;
+	}
+	
+	#container_congratulations {
+		margin: none;
+		height: 100px;
+		padding-top: 15px;
+	}
+	
+	#cell_congratulations {
+		padding-top: 15px;
+		font-size: 2.4em;
+		color: #e47911;
+	}
+	
+	#intro_message {
+		display: block;
+		font-size: 1.25em;
+		margin-bottom: 20px;
+	}
+	
+	.container {
+		_margin-top: 10px;
+		margin-bottom: 20px;
+		padding-left: 20px;
+	}
+	
+	#container_what_now {
+		height: 260px;
+	}
+	
+	#what_now_body {
+		width: 900px;
+		display: inline-block;
+		float: left;
+	}
+	
+	#what_now_image {
+		padding-top: 0px;
+	}
+	
+	#container_architecture {
+		margin-bottom: 75px;
+	}
+	
+	#architecture_image {
+		float: left;
+	}
+
+	#architecture_body {
+		margin-left: 10px;
+		display: inline-block;
+		width: 550px;
+	}
+
+	a {
+		text-decoration: none;
+		color: #16b;
+	}
+
+	a.external {
+		background: url("images/external-link.png") center right no-repeat;
+		padding-right: 18px;
+	}
+
+	li {
+		padding-bottom: 5px;
+		padding-top: 15px;
+		color: #e47911;
+		font-weight: 500;
+	}
+	
+	#container_page_details {
+	}
+	
+	#page_details_body {
+		width: 550px;
+		float: left;
+		margin-right: 50px;
+		text-align: justify;
+	}
+	
+	#page_details_image {
+		
+	}
+	
+	.a-divider-inner {
+		height: 120px;
+		margin-bottom: -90px;
+		background: linear-gradient(to bottom, rgba(0,0,0,0.14),rgba(0,0,0,0.03) 3px,rgba(0,0,0,0));
+		z-index: 0;
+		zoom: 1;
+	}
+
+	.what_now_line_item {
+		height: 50px;
+		display: table-cell;
+		vertical-align: middle;
+	}
+	
+	.aws-block {
+		background-image: url("images/block.png");
+		background-repeat: no-repeat;
+		background-size: 25px 25px;
+		height: 45px;
+		width: 30px;
+		float: left;
+		display: table-cell;
+		background-position: center; 
+		margin-right: 10px;
+	}
+	
+	.border {
+		border-style: none;
+		border-width: thin;
+	}
+	</style>
+
+</head>
+<body>
+
+	<div id="top_bar"></div>
+	
+	<div id="container_congratulations">
+		<div id="amazon_logo"><img src="images/aws.png"></div>
+		<div id="cell_congratulations"><center>Congratulations!</center></div>
+	</div>
+
+	<div id="intro_message">
+		<center>You have successfully launched the <b>Quick Start reference architecture for {compliance-body} workloads on AWS!</b></center>
+	</div>
+
+	<div class="a-divider-inner"></div>
+	
+	<div id="container_what_now" class="container border">
+		<div class="section_header border">What Now?</div>
+		<div>
+			<div id="what_now_body" class="section_text border">
+				<div class="border">
+					<div class="aws-block border"></div>
+					<div class="what_now_line_item border">
+						This Quick Start installs a sample WordPress application that you can <a href="wordpress/wp-admin/install.php" target="_blank">configure</a>. Of course, this is just an example to get you started. You can use this architecture as a reference when creating an architecture that supports your applications.
+					</div>
+				</div>
+				<div class="border">
+					<div class="aws-block border"></div>
+					<div class="what_now_line_item border">
+						View the <a href="{compliance-body-matrix}" class="external">Security Control Matrix</a> that maps the specific AWS security controls to the compliance requirements.
+					</div>
+				</div>
+				<div class="border">
+					<div class="aws-block border"></div>
+					<div class="what_now_line_item border">
+						If you need further assistance, please contact <a href="https://aws.amazon.com/professional-services/" target="_blank" class="external">AWS Professional Services</a>.
+					</div>
+				</div>
+				<div class="border">
+					<div class="aws-block border"></div>
+					<div class="what_now_line_item border">
+						We're always looking for ways to improve your experience. Please take a moment to complete the <a href="https://aws.au1.qualtrics.com/SE/?SID=SV_55sYYdtY1NhTTgN&qs={compliance-body-survey-link}" target="_blank" class="external">Quick Start survey</a>.
+					</div>
+				</div>
+			</div>
+			<div id="what_now_image" class="border"><img src="images/compliance.png"></div>
+		</div>
+	</div>
+	
+	<div class="a-divider-inner"></div>
+	
+	<div id="container_architecture" class="container border">
+		<div id="architecture_image" class="border"><a href="images/quick-start-architecture.png" target="_blank"><img src="images/quick-start-architecture.png" height="380" width="511" alt="Network Architecture" title="Click to enlarge"></a></div>
+		<div id="architecture_body" class="border">
+			<div class="section_header border">Architecture</div>
+			<div class="section_text border">
+				The Quick Start created an architecture in your account similar to <a href="images/quick-start-architecture.png" target="_blank">this diagram</a>. The architecture is:
+				<ul>
+				<li>Compliant</li>
+				Helps meet compliance requirements specified in the Security Control Matrix
+				<li>Secure</li>
+				The system includes security controls that restrict access to resources
+				<li>Elastic</li>
+				The instances reside in Auto Scaling Groups that allow them to shrink or grow based on demand
+				<li>Fault-tolerant</li>
+				The system is deployed over two Availability Zones to increase availability
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<div class="a-divider-inner"></div>
+	
+	<div id="container_page_details" class="container border">
+		<div class="section_header border">Details About This Page</div>
+		<div>
+			<div id="page_details_body" class="section_text border">
+				<p>
+				The page you're viewing right now resides on an application server instance that resides in an Auto Scaling Group in a private subnet (highlighted in the diagram). The application server instances can only be accessed by the load-balanced proxy servers.
+				</p>
+				<p>
+				The VPC in <a href="images/quick-start-vpc-highlight.png" target="_blank">this diagram</a> is one of three VPCs created in the Quick Start architecture. The CloudFormation stack creates and installs the WordPress application using the application statck. To customize your implementation of this Quick Start, modify the application stack to suit the needs of your application.
+				</p>
+			</div>
+			<div id="page_details_image border"><a href="images/quick-start-vpc-highlight.png" target="_blank"><img src="images/quick-start-vpc-highlight.png" height="330" width="510 title="Click to enlarge"></a></div>
+		</div>
+	</div>
+	
+</body>
+</html>

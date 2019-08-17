@@ -140,6 +140,7 @@ Resources:
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 5
+      HealthCheckPath: "/landing.html"
       Port: 443
       Protocol: HTTPS
       Tags:

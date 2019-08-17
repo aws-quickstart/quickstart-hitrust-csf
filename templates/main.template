@@ -239,8 +239,6 @@ Resources:
 
   ProductionVpc:
     Type: AWS::CloudFormation::Stack
-    DependsOn:
-    - Logging
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template
       Parameters:
@@ -264,8 +262,6 @@ Resources:
     
   ManagementVpc:
     Type: AWS::CloudFormation::Stack
-    DependsOn: 
-    - Logging
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template
       Parameters:
@@ -343,6 +339,7 @@ Resources:
         AWSPublicFQDN: !Ref AWSPublicFQDN
         BastionSecurityGroup: !GetAtt Bastion.Outputs.BastionSecurityGroupID
         DBPassword: !Ref DBPassword
+        KeyPairName: cikey
         LogBucket: !GetAtt Logging.Outputs.LogBucket
         PublicSubnetIds:  !Sub "${ProductionVpc.Outputs.PublicSubnet1ID},${ProductionVpc.Outputs.PublicSubnet2ID}"
         PrivateSubnetAppIds: !Sub "${ProductionVpc.Outputs.PrivateSubnet1AID},${ProductionVpc.Outputs.PrivateSubnet2AID}"

@@ -244,40 +244,40 @@ Resources:
           Resource: !Ref ConfigSNS
       Topics:
       - !Ref ConfigSNS
-  ConfigRecorder:
-    Type: AWS::Config::ConfigurationRecorder
-    Condition: CreateConfig
-    Properties:
-      RecordingGroup:
-        AllSupported: true
-        IncludeGlobalResourceTypes: true
-      RoleARN: !GetAtt ConfigRole.Arn
-  ConfigDeliveryChannel:
-    Type: AWS::Config::DeliveryChannel
-    Condition: CreateConfig
-    Properties:
-      ConfigSnapshotDeliveryProperties:
-        DeliveryFrequency: One_Hour
-      S3BucketName: !Ref LogBucket
-      S3KeyPrefix: "config"
-      SnsTopicARN: !Ref ConfigSNS
+  #ConfigRecorder:
+  #  Type: AWS::Config::ConfigurationRecorder
+  #  Condition: CreateConfig
+  #  Properties:
+  #    RecordingGroup:
+  #      AllSupported: true
+  #      IncludeGlobalResourceTypes: true
+  #    RoleARN: !GetAtt ConfigRole.Arn
+  #ConfigDeliveryChannel:
+  #  Type: AWS::Config::DeliveryChannel
+  #  Condition: CreateConfig
+  #  Properties:
+  #    ConfigSnapshotDeliveryProperties:
+  #      DeliveryFrequency: One_Hour
+  #    S3BucketName: !Ref LogBucket
+  #    S3KeyPrefix: "config"
+  #    SnsTopicARN: !Ref ConfigSNS
 
-  ConfigRulesStack:
-    Type: AWS::CloudFormation::Stack
-    DependsOn:
-    - ConfigRole
-    - ConfigRolePolicy
-    Properties:
-      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/config-rules.template
-      Parameters:
-        ConfigRecorder: !If [ CreateConfig, !Ref ConfigRecorder, !Ref ConfigRecorderName ]
-        ConfigDeliveryChannel: !If [ CreateConfig, !Ref ConfigDeliveryChannel, !Ref ConfigDeliveryChannelName ]
-        LogBucket: !Ref LogBucket
-        QSTagKey: !Ref QSTagKey
-        QSTagValue: !Ref QSTagValue
-      Tags:
-      - Key: QSTagKey
-        Value: QSTagValue
+  #ConfigRulesStack:
+  #  Type: AWS::CloudFormation::Stack
+  #  DependsOn:
+  #  - ConfigRole
+  #  - ConfigRolePolicy
+  #  Properties:
+  #    TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/config-rules.template
+  #    Parameters:
+  #      ConfigRecorder: !If [ CreateConfig, !Ref ConfigRecorder, !Ref ConfigRecorderName ]
+  #      ConfigDeliveryChannel: !If [ CreateConfig, !Ref ConfigDeliveryChannel, !Ref ConfigDeliveryChannelName ]
+  #      LogBucket: !Ref LogBucket
+  #      QSTagKey: !Ref QSTagKey
+  #      QSTagValue: !Ref QSTagValue
+  #    Tags:
+  #    - Key: QSTagKey
+  #      Value: QSTagValue
 
 Outputs:
   LogBucket:
