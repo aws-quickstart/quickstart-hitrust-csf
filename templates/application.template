@@ -18,9 +18,11 @@ Metadata:
       - QSTagKey
       - QSTagValue
     - Label:
-        default: Database Configuration
+        default: Security Configuration
       Parameters:
       - DBPassword
+      - KeyPairName
+      - LogBucket
     - Label:
         default: Network Configuration
       Parameters:
@@ -33,13 +35,15 @@ Metadata:
       - VpcId
     ParameterLabels:
       AWSHostedZoneID:
-        default: DNS Zone ID
+        default: DNS Hosted Zone ID
       AWSPublicFQDN:
         default: Full DNS Name for Web App
       BastionSecurityGroup:
         default: Bastion Host Security Group ID
       DBPassword:
         default: Database Password
+      KeyPairName:
+        default: EC2 Key Pair
       LogBucket:
         default: Log Bucket
       PublicSubnetIds:
@@ -85,7 +89,9 @@ Parameters:
     ConstraintDescription: Can only contain alphanumeric characters or the following
       special characters !^*-_+, between 8 and 28 characters
   KeyPairName:
-    Type: String
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to app servers
+    ConstraintDescription: Must be the name of an existing EC2 Key Pair
   LogBucket:
     Type: String
     Description: Bucket to write logs to
@@ -152,69 +158,53 @@ Mappings:
   Database:
     Defaults:
       User: HitrustExampleDbUser
+    InstanceClass:
+      GovCloud: db.t2.small
+      NonGovCloud: db.t3.small
+  Ec2:
+    Defaults:
+      InstanceSize: t3.small
   AWSAMIRegionMap:
     AMI:
       AMZNLINUX2HVM: amzn2-ami-hvm-2.0.20190618-x86_64-gp2 
     ap-east-1:
       AMZNLINUX2HVM: ami-570c7726
-      InstanceTypeDatabase: db.m5.large
     ap-northeast-1:
       AMZNLINUX2HVM: ami-0c3fd0f5d33134a76
-      InstanceTypeDatabase: db.m5.large
     ap-northeast-2:
       AMZNLINUX2HVM: ami-095ca789e0549777d
-      InstanceTypeDatabase: db.m5.large
-    ap-northeast-3:
-      AMZNLINUX2HVM: ami-0ee933a7f81beb045
-      InstanceTypeDatabase: db.m5.large
     ap-south-1:
       AMZNLINUX2HVM: ami-0d2692b6acea72ee6
-      InstanceTypeDatabase: db.m5.large
     ap-southeast-1:
       AMZNLINUX2HVM: ami-01f7527546b557442
-      InstanceTypeDatabase: db.m5.large
     ap-southeast-2:
       AMZNLINUX2HVM: ami-0dc96254d5535925f
-      InstanceTypeDatabase: db.m5.large
     ca-central-1:
       AMZNLINUX2HVM: ami-0d4ae09ec9361d8ac
-      InstanceTypeDatabase: db.m5.large
     eu-central-1:
       AMZNLINUX2HVM: ami-0cc293023f983ed53
-      InstanceTypeDatabase: db.m5.large
     eu-north-1:
       AMZNLINUX2HVM: ami-3f36be41 
-      InstanceTypeDatabase: db.m5.large
     eu-west-1:
       AMZNLINUX2HVM: ami-0bbc25e23a7640b9b
-      InstanceTypeDatabase: db.m5.large
     eu-west-2:
       AMZNLINUX2HVM: ami-0d8e27447ec2c8410
-      InstanceTypeDatabase: db.m5.large
     eu-west-3:
       AMZNLINUX2HVM: ami-0adcddd3324248c4c
-      InstanceTypeDatabase: db.m5.large
     sa-east-1:
       AMZNLINUX2HVM: ami-058943e7d9b9cabfb
-      InstanceTypeDatabase: db.m3.large
     us-east-1:
       AMZNLINUX2HVM: ami-0b898040803850657
-      InstanceTypeDatabase: db.m5.large
     us-east-2:
       AMZNLINUX2HVM: ami-0d8f6eb4f641ef691
-      InstanceTypeDatabase: db.m5.large
     us-gov-east-1:
       AMZNLINUX2HVM: ami-a2d938d3
-      InstanceTypeDatabase: db.m3.large
     us-gov-west-1:
       AMZNLINUX2HVM: ami-e9a9d388
-      InstanceTypeDatabase: db.m3.large
     us-west-1:
       AMZNLINUX2HVM: ami-056ee704806822732
-      InstanceTypeDatabase: db.m5.large
     us-west-2:
       AMZNLINUX2HVM: ami-082b5a644766e0e6f
-      InstanceTypeDatabase: db.m5.large
 
 Conditions:
   GovCloudCondition: !Or [ !Equals [ !Ref "AWS::Region", 'us-gov-west-1'], !Equals [ !Ref "AWS::Region", 'us-gov-east-1'] ]
@@ -270,7 +260,7 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/database.template
       Parameters:
-        DBInstanceClass: !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", InstanceTypeDatabase ]
+        DBInstanceClass: !If [ GovCloudCondition, !FindInMap [ Database, InstanceClass, GovCloud ], !FindInMap [ Database, InstanceClass, NonGovCloud ] ]
         DBMasterUser: !FindInMap [ Database, Defaults, User]
         DBPassword: !Ref DBPassword
         DBPrivateSubnets: !Join [ "," , !Ref PrivateSubnetDBIds ]
@@ -281,72 +271,6 @@ Resources:
       Tags:
       - Key: !Ref QSTagKey
         Value: !Ref QSTagValue
-
-#  WebContentBucket:
-#    Type: AWS::S3::Bucket
-#    Properties:
-#      AccessControl: Private
-#      BucketEncryption: 
-#        ServerSideEncryptionConfiguration:
-#        - ServerSideEncryptionByDefault:
-#            SSEAlgorithm: AES256
-#      LifecycleConfiguration:
-#        Rules:
-#        - Id: Transition90days
-#          Status: Enabled
-#          Transition:
-#            TransitionInDays: 90
-#            StorageClass: !FindInMap [ Storage, Defaults, ArchiveTier ]
-#      LoggingConfiguration:
-#        DestinationBucketName: !Ref LogBucket
-#        LogFilePrefix: !FindInMap [ Storage, WebContent, LogPrefix ]
-#      Tags:
-#      - Key: !Ref QSTagKey
-#        Value: !Ref QSTagValue
-#      VersioningConfiguration:
-#        Status: Enabled
-#  WebContentS3Policy:
-#    Type: AWS::S3::BucketPolicy
-#    DependsOn: WebContentBucket
-#    Properties:
-#      Bucket: !Ref WebContentBucket
-#      PolicyDocument:
-#       Statement:
-#        - Sid: EnforceSecureTransport
-#          Action: s3:*
-#          Effect: Deny
-#          Principal: '*'
-#          Resource:
-#            !Sub
-#            - arn:${Partition}:s3:::${WebContentBucket}
-#            - Partition: !If [ GovCloudCondition, aws-us-gov, aws ]
-#          Condition:
-#            Bool:
-#              aws:SecureTransport: 'false'
-#        - Sid: EnforceEncryptionOnPut
-#          Effect: Deny
-#          Principal: '*'
-#          Action: s3:PutObject
-#          Resource:
-#            !Sub
-#            - arn:${Partition}:s3:::${WebContentBucket}/*
-#            - Partition: !If [ GovCloudCondition, aws-us-gov, aws ]
-#          Condition:
-#            StringNotEquals:
-#              s3:x-amz-server-side-encryption: AES256
-#  CleanupWebBucket:
-#    Type: AWS::CloudFormation::Stack
-#    DependsOn:
-#    - WebContentBucket
-#    Properties:
-#      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/clean-bucket.template
-#      Parameters:
-#        Bucket: !Ref WebContentBucket
-#        QSTagKey: !Ref QSTagKey
-#        QSTagValue: !Ref QSTagValue
-#      Tags:
-#      - Key: !Ref QSTagKey
-#        Value: !Ref QSTagValue
 
   AppInstanceRole:
     Type: AWS::IAM::Role
@@ -480,8 +404,7 @@ Resources:
     Properties:
       ImageId: !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", AMZNLINUX2HVM ]
       IamInstanceProfile: !Ref AppInstanceProfile
-      #InstanceType: !FindInMap [ EC2, !Ref "AWS::Region", InstanceType ]
-      InstanceType: m4.large
+      InstanceType: !FindInMap [ Ec2, Defaults, InstanceSize]
       KeyName: !Ref KeyPairName
       BlockDeviceMappings:
       - DeviceName: /dev/xvda

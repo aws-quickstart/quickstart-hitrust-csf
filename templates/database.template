@@ -4,11 +4,14 @@ Description: Creates Database for WordPress instance
 Parameters:
   DBInstanceClass:
     Type: String
+    Description: Database instance class
   DBMasterUser:
     Type: String
+    Description: Master User for Database
   DBPassword:
     Type: String
     NoEcho: true
+    Description: Database password
   DBPrivateSubnets:
     Type: List<AWS::EC2::Subnet::Id>
   QSTagKey:

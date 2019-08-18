@@ -1,3 +1,4 @@
+# CloudFormation Organization
 # - master
 #   - logging
 #     - config rules
@@ -37,30 +38,53 @@ Metadata:
       - QSTagKey
       - QSTagValue
     - Label:
-        default: Database Configuration
+        default: Security Configuration
       Parameters:
       - DBPassword
+      - BastionKeyPairName
+      - KeyPairName
+    - Label:
+        default: Network Configuration
+      Parameters:
+      - AvailabilityZones
+      - BastionAccessCidr
+      - SourceCidr
     ParameterLabels:
       AWSHostedZoneID:
         default: DNS Zone ID
       AWSPublicFQDN:
         default: Full DNS Name for Web App
+      AvailabilityZones:
+        default: AWS Availability Zones
+      BastionAccessCidr:
+        default: CIDR to access Bastion
+      BastionKeyPairName:
+        default: Bastion key pair
       ConfigRecorder:
         default: AWS Config Recorder ARN
       ConfigDeliveryChannel:
         default: AWS Config Delivery Channel ARN
       DBPassword:
         default: Database Password
+      KeyPairName:
+        default: EC2 Key Pair (App)
       QSS3BucketName:
         default: Quick Start S3 Bucket Name
       QSS3KeyPrefix:
         default: Quick Start S3 Key Prefix
+      QSTagKey:
+        default: Quick Start Tag key
+      QSTagValue:
+        default: Quick Start Tag value
+      SSLCertificateARN:
+        default: SSL Certificate ARN (Requires matching DNS name)
+      SourceCidr:
+        default: Source CIDR for Access
 
 Parameters:
   AWSHostedZoneID:
     Description: DNS Zone ID to contain the server's DNS entry.
-    # Type: AWS::Route53::HostedZone::Id
-    Type: String
+    Type: AWS::Route53::HostedZone::Id
   AWSPublicFQDN:
     Description: Web app will be reachable at this address.
     Type: String
@@ -95,6 +119,10 @@ Parameters:
     AllowedPattern: '[a-zA-Z0-9!^*\-_+]*'
     ConstraintDescription: Can only contain alphanumeric characters or the following
       special characters !^*-_+, between 8 and 28 characters
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to app servers
+    ConstraintDescription: Must be the name of an existing EC2 Key Pair
   QSS3BucketName:
     AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-.]*[0-9a-zA-Z])*$
     ConstraintDescription: Quick Start bucket name can include numbers, lowercase
@@ -152,70 +180,6 @@ Mappings:
       VPC: 10.101.0.0/16
     Bastion:
       InstanceType: t2.medium
-  # Need to update
-  AWSAMIRegionMap:
-    AMI:
-      AMZNLINUX2HVM: amzn2-ami-hvm-2.0.20190618-x86_64-gp2 
-    ap-east-1:
-      AMZNLINUX2HVM: ami-570c7726
-      InstanceTypeDatabase: db.m5.large
-    ap-northeast-1:
-      AMZNLINUX2HVM: ami-0c3fd0f5d33134a76
-      InstanceTypeDatabase: db.m5.large
-    ap-northeast-2:
-      AMZNLINUX2HVM: ami-095ca789e0549777d
-      InstanceTypeDatabase: db.m5.large
-    ap-northeast-3:
-      AMZNLINUX2HVM: ami-0ee933a7f81beb045
-      InstanceTypeDatabase: db.m5.large
-    ap-south-1:
-      AMZNLINUX2HVM: ami-0d2692b6acea72ee6
-      InstanceTypeDatabase: db.m5.large
-    ap-southeast-1:
-      AMZNLINUX2HVM: ami-01f7527546b557442
-      InstanceTypeDatabase: db.m5.large
-    ap-southeast-2:
-      AMZNLINUX2HVM: ami-0dc96254d5535925f
-      InstanceTypeDatabase: db.m5.large
-    ca-central-1:
-      AMZNLINUX2HVM: ami-0d4ae09ec9361d8ac
-      InstanceTypeDatabase: db.m5.large
-    eu-central-1:
-      AMZNLINUX2HVM: ami-0cc293023f983ed53
-      InstanceTypeDatabase: db.m5.large
-    eu-north-1:
-      AMZNLINUX2HVM: ami-3f36be41 
-      InstanceTypeDatabase: db.m5.large
-    eu-west-1:
-      AMZNLINUX2HVM: ami-0bbc25e23a7640b9b
-      InstanceTypeDatabase: db.m5.large
-    eu-west-2:
-      AMZNLINUX2HVM: ami-0d8e27447ec2c8410
-      InstanceTypeDatabase: db.m5.large
-    eu-west-3:
-      AMZNLINUX2HVM: ami-0adcddd3324248c4c
-      InstanceTypeDatabase: db.m5.large
-    sa-east-1:
-      AMZNLINUX2HVM: ami-058943e7d9b9cabfb
-      InstanceTypeDatabase: db.m3.large
-    us-east-1:
-      AMZNLINUX2HVM: ami-0b898040803850657
-      InstanceTypeDatabase: db.m5.large
-    us-east-2:
-      AMZNLINUX2HVM: ami-0d8f6eb4f641ef691
-      InstanceTypeDatabase: db.m5.large
-    us-gov-east-1:
-      AMZNLINUX2HVM: ami-a2d938d3
-      InstanceTypeDatabase: db.m3.large
-    us-gov-west-1:
-      AMZNLINUX2HVM: ami-e9a9d388
-      InstanceTypeDatabase: db.m3.large
-    us-west-1:
-      AMZNLINUX2HVM: ami-056ee704806822732
-      InstanceTypeDatabase: db.m5.large
-    us-west-2:
-      AMZNLINUX2HVM: ami-082b5a644766e0e6f
-      InstanceTypeDatabase: db.m5.large
   
 Conditions:
   GovCloudCondition: !Or [ !Equals [ !Ref "AWS::Region", us-gov-west-1], !Equals [ !Ref "AWS::Region", us-gov-east-1]]
@@ -320,8 +284,6 @@ Resources:
         RemoteAccessCIDR: !Ref BastionAccessCidr
         PublicSubnet1ID: !GetAtt ManagementVpc.Outputs.PublicSubnet1ID
         PublicSubnet2ID: !GetAtt ManagementVpc.Outputs.PublicSubnet2ID
-#        QSS3BucketName: !Ref QSS3BucketName
-#        QSS3KeyPrefix: !Ref QSS3KeyPrefix
         VPCID: !GetAtt ManagementVpc.Outputs.VPCID
       Tags:
       - Key: !Ref QSTagKey
@@ -339,7 +301,7 @@ Resources:
         AWSPublicFQDN: !Ref AWSPublicFQDN
         BastionSecurityGroup: !GetAtt Bastion.Outputs.BastionSecurityGroupID
         DBPassword: !Ref DBPassword
-        KeyPairName: cikey
+        KeyPairName: !Ref KeyPairName
         LogBucket: !GetAtt Logging.Outputs.LogBucket
         PublicSubnetIds:  !Sub "${ProductionVpc.Outputs.PublicSubnet1ID},${ProductionVpc.Outputs.PublicSubnet2ID}"
         PrivateSubnetAppIds: !Sub "${ProductionVpc.Outputs.PrivateSubnet1AID},${ProductionVpc.Outputs.PrivateSubnet2AID}"
@@ -368,4 +330,4 @@ Outputs:
     Value: !GetAtt Application.Outputs.ApplicationURL
   LandingPageURL:
     Description: Landing Page
-    Value: !GetAtt Application.Outputs.ApplicationURL
+    Value: !GetAtt Application.Outputs.LandingPageURL

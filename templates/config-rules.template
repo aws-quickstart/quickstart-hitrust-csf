@@ -76,7 +76,7 @@ Resources:
         SourceIdentifier: !GetAtt LambdaConfigRecorderEnabled.Arn
         SourceDetails:
         - EventSource: aws.config
-          MaximumExecutionFrequency: One_Hour
+          MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
           MessageType: ScheduledNotification
   LambdaConfigRecorderEnabled:
     Type: AWS::Lambda::Function
@@ -600,3 +600,4 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: VPC_FLOW_LOGS_ENABLED
+

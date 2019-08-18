@@ -1,8 +1,20 @@
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Creates R53 records and ACM Certificate.
+Description: Creates R53 records and ACM Certificate. ACM certificate is for all subdomains for the specified domain name.
 
 Parameters:
+  DomainName:
+    Type: String
+    Description: Domain Name configured for the cluster.
+  HostedZoneID:
+    Type: AWS::Route53::HostedZone::Id
+    Description: Route 53 Hosted Zone ID to use. If left blank, Route 53
+      will not be configured and DNS must be setup manually. If you specify this,
+      you must also specify DomainName
+    MaxLength: 32
+  LogBucket:
+      Type: String
+      Description: Bucket to write logs to
   QSS3BucketName:
     AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
     ConstraintDescription: Quick Start bucket name can include numbers, lowercase
@@ -28,18 +40,7 @@ Parameters:
   QSTagValue:
     Type: String
     Description: Tag value to identify resources from this Quick Start
-  HostedZoneID:
-    Description: Route 53 Hosted Zone ID to use. If left blank, Route 53
-      will not be configured and DNS must be setup manually. If you specify this,
-      you must also specify DomainName
-    Type: String
-    MaxLength: 32
-  LogBucket:
-      Type: String
-      Description: Bucket to write logs to
-  DomainName:
-    Description: Domain Name configured for the cluster.
-    Type: String
+  
 Resources:
   CopyLambdaStack:
     Type: AWS::CloudFormation::Stack

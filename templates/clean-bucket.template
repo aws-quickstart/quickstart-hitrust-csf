@@ -1,6 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: This CloudFormation Template removes non-versioned files from an S3 Bucket.
-  (qs-1nlegmi0o)
 Parameters:
   Bucket:
     Description: The Bucket required for the custom resource to function.

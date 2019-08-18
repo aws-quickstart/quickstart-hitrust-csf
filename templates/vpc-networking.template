@@ -7,6 +7,8 @@ Parameters:
   ProductionVpcCidr: 
     Type: String
     Description: VPC CIDR for web app VPC
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
   ProductionRouteTablePrivateA: 
     Type: String
     Description: Route Table Private Subnet A - web app VPC
@@ -22,6 +24,8 @@ Parameters:
   ManagementVpcCidr: 
     Type: String
     Description: Management VPC CIDR
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
   ManagementRouteTablePrivateA: 
     Type: String
     Description: Route Table Private Subnet A - management VPC
