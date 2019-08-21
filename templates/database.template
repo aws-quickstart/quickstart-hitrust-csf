@@ -8,6 +8,10 @@ Parameters:
   DBMasterUser:
     Type: String
     Description: Master User for Database
+  DBName:
+    Type: String
+    Description: Database Name
+    Default: wordpressdb
   DBPassword:
     Type: String
     NoEcho: true
@@ -33,8 +37,10 @@ Mappings:
       Name: sg-database-access
     Defaults:
       Engine: MySQL
-      AllocatedStorage: 50
       BackupRetention: 35
+    Storage: 
+      Type: gp2
+      AllocatedStorage: 50
 
 Resources:
   # Configure MySQL Database
@@ -67,15 +73,17 @@ Resources:
     - DBSubnetGroup
     - DBSecurityGroup
     Properties:
-      AllocatedStorage: !FindInMap [ RDS, Defaults, AllocatedStorage]
+      AllocatedStorage: !FindInMap [ RDS, Storage, AllocatedStorage]
       BackupRetentionPeriod: !FindInMap [ RDS, Defaults, BackupRetention ]
       CopyTagsToSnapshot: true
       DBInstanceClass: !Ref DBInstanceClass
+      DBName: !Ref DBName
       DBSubnetGroupName: !Ref DBSubnetGroup
       Engine: !FindInMap [ RDS, Defaults, Engine]
       MultiAZ: true
       PubliclyAccessible: false
       StorageEncrypted: true
+      StorageType: !FindInMap [ RDS, Storage, Type ]
       MasterUsername: !Ref DBMasterUser
       MasterUserPassword: !Ref DBPassword
       Tags:
@@ -87,7 +95,7 @@ Resources:
 Outputs:
   DBName:
     Description: Database instance name
-    Value: !Ref DBMySQL
+    Value: !Ref DBName
   EndpointAddress:
     Description: Database endpoint address
     Value: !GetAtt DBMySQL.Endpoint.Address

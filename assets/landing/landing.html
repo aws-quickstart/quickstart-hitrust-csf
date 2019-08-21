@@ -178,13 +178,7 @@
 				<div class="border">
 					<div class="aws-block border"></div>
 					<div class="what_now_line_item border">
-						If you need further assistance, please contact <a href="https://aws.amazon.com/professional-services/" target="_blank" class="external">AWS Professional Services</a>.
-					</div>
-				</div>
-				<div class="border">
-					<div class="aws-block border"></div>
-					<div class="what_now_line_item border">
-						We're always looking for ways to improve your experience. Please take a moment to complete the <a href="https://aws.au1.qualtrics.com/SE/?SID=SV_55sYYdtY1NhTTgN&qs={compliance-body-survey-link}" target="_blank" class="external">Quick Start survey</a>.
+						If you need further assistance, please contact <a href="https://aws.amazon.com/professional-services/" target="_blank" class="external">AWS Professional Services</a>. Additionally, many <a href="https://aws.amazon.com/health/healthcare-partners/" target="_blank" class="external">AWS Partner Network (APN) Healthcare Competency Partners</a> can help you tailor your application to the HITRUST Common Security Framework. 
 					</div>
 				</div>
 			</div>
@@ -201,13 +195,11 @@
 			<div class="section_text border">
 				The Quick Start created an architecture in your account similar to <a href="images/quick-start-architecture.png" target="_blank">this diagram</a>. The architecture is:
 				<ul>
-				<li>Compliant</li>
-				Helps meet compliance requirements specified in the Security Control Matrix
-				<li>Secure</li>
-				The system includes security controls that restrict access to resources
-				<li>Elastic</li>
+				<li>Is Secure</li>
+				The system includes security controls that restrict access to resources and helps meet compliance requirements specified in the Security Control Matrix
+				<li>Is Elastic</li>
 				The instances reside in Auto Scaling Groups that allow them to shrink or grow based on demand
-				<li>Fault-tolerant</li>
+				<li>Is Fault-tolerant</li>
 				The system is deployed over two Availability Zones to increase availability
 				</ul>
 			</div>
@@ -221,10 +213,10 @@
 		<div>
 			<div id="page_details_body" class="section_text border">
 				<p>
-				The page you're viewing right now resides on an application server instance that resides in an Auto Scaling Group in a private subnet (highlighted in the diagram). The application server instances can only be accessed by the load-balanced proxy servers.
+				The page you're viewing right now resides on an application server instance that resides in an Auto Scaling Group in a private subnet (highlighted in the diagram). The application server instances can only be accessed by the Application Load Balancer.
 				</p>
 				<p>
-				The VPC in <a href="images/quick-start-vpc-highlight.png" target="_blank">this diagram</a> is one of three VPCs created in the Quick Start architecture. The CloudFormation stack creates and installs the WordPress application using the application statck. To customize your implementation of this Quick Start, modify the application stack to suit the needs of your application.
+				The VPC in <a href="images/quick-start-vpc-highlight.png" target="_blank">this diagram</a> is one of two VPCs created in the Quick Start architecture. The CloudFormation stack creates and installs the WordPress application using the application statck. To customize your implementation of this Quick Start, modify the application stack to suit the needs of your application.
 				</p>
 			</div>
 			<div id="page_details_image border"><a href="images/quick-start-vpc-highlight.png" target="_blank"><img src="images/quick-start-vpc-highlight.png" height="330" width="510 title="Click to enlarge"></a></div>

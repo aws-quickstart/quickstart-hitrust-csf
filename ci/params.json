@@ -1,0 +1,33 @@
+[
+    {
+        "ParameterKey": "AWSHostedZoneID",
+        "ParameterValue": "Z20J45NCQ1BKQT"
+    }, {
+        "ParameterKey": "AWSPublicFQDN",
+        "ParameterValue": "hitrust.t.quickstart.awspartner.com"
+    }, {
+        "ParameterKey": "AvailabilityZones",
+        "ParameterValue": "$[taskcat_genaz_2]"
+    }, {
+        "ParameterKey": "BastionAccessCidr",
+        "ParameterValue": "0.0.0.0/0"
+    }, {
+        "ParameterKey": "BastionKeyPairName",
+        "ParameterValue": "$[taskcat_getkeypair]"
+    }, {
+        "ParameterKey": "KeyPairName",
+        "ParameterValue": "$[taskcat_getkeypair]"
+    },{
+        "ParameterKey": "SSLCertificateARN",
+        "ParameterValue": ""
+    }, {
+        "ParameterKey": "DBPassword",
+        "ParameterValue": "Test1234!"
+    }, {
+        "ParameterKey": "QSS3BucketName",
+        "ParameterValue": "$[taskcat_autobucket]"
+    }, {
+        "ParameterKey": "SourceCidr",
+        "ParameterValue": "0.0.0.0/0"
+    }
+]

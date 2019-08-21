@@ -158,6 +158,7 @@ Mappings:
   Database:
     Defaults:
       User: HitrustExampleDbUser
+      Name: HiTrustWordpressDB
     InstanceClass:
       GovCloud: db.t2.small
       NonGovCloud: db.t3.small
@@ -262,6 +263,7 @@ Resources:
       Parameters:
         DBInstanceClass: !If [ GovCloudCondition, !FindInMap [ Database, InstanceClass, GovCloud ], !FindInMap [ Database, InstanceClass, NonGovCloud ] ]
         DBMasterUser: !FindInMap [ Database, Defaults, User]
+        DBName: !FindInMap [ Database, Defaults, Name]
         DBPassword: !Ref DBPassword
         DBPrivateSubnets: !Join [ "," , !Ref PrivateSubnetDBIds ]
         QSTagKey: !Ref QSTagKey
@@ -352,8 +354,6 @@ Resources:
         install_wordpress:
           packages:
             yum:
-              php: []
-              php-mysql: []
               mariadb: []
               httpd: []
           sources:
@@ -421,7 +421,10 @@ Resources:
             #!/bin/bash -x
             set -e
 
+            echo yum update -y && yum install -y mod_ssl >> /home/ec2-user/tmp.log
             yum update -y && yum install -y mod_ssl
+            echo amazon-linux-extras install php7.3 -y >> /home/ec2-user/tmp.log
+            amazon-linux-extras install php7.3 -y
 
             echo aws configure set default.s3.signature_version s3v4 >> /home/ec2-user/tmp.log
             aws configure set default.s3.signature_version s3v4
