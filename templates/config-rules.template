@@ -148,16 +148,6 @@ Resources:
       Source:
         Owner: AWS
         SourceIdentifier: CLOUD_TRAIL_ENABLED
-  
-  # CloudTrail: Trails are encrypted
-  CloudTrailEncryption:
-    Type: AWS::Config::ConfigRule
-    Properties:
-      Description: Checks whether AWS CloudTrail is configured to use the server side encryption (SSE) AWS Key Management Service (AWS KMS) customer master key (CMK) encryption. The rule is compliant if the KmsKeyId is defined.
-      MaximumExecutionFrequency: !FindInMap [ Config, Defaults, MaximumExecutionFrequency ]
-      Source:
-        Owner: AWS
-        SourceIdentifier: CLOUD_TRAIL_ENCRYPTION_ENABLED
 
   # CloudTrail: Log files validated
   CloudTrailLogFileValidation:
@@ -582,7 +572,6 @@ Resources:
         ComplianceResourceTypes:
         - AWS::EC2::Volume
         - AWS::EC2::Instance
-        - AWS::EC2::SecurityGroup
         - AWS::ElasticLoadBalancingV2::LoadBalancer
         - AWS::RDS::DBInstance
         - AWS::RDS::DBSubnetGroup

@@ -421,31 +421,17 @@ Resources:
             #!/bin/bash -x
             set -e
 
-            echo yum update -y && yum install -y mod_ssl >> /home/ec2-user/tmp.log
             yum update -y && yum install -y mod_ssl
-            echo amazon-linux-extras install php7.3 -y >> /home/ec2-user/tmp.log
             amazon-linux-extras install php7.3 -y
 
-            echo aws configure set default.s3.signature_version s3v4 >> /home/ec2-user/tmp.log
             aws configure set default.s3.signature_version s3v4
-            echo aws configure set region ${AWS::Region} >> /home/ec2-user/tmp.log
             aws configure set region ${AWS::Region} 
             # Tag volumes
-            echo "Tagging volumes" >> /home/ec2-user/tmp.log
-
-            echo EC2_INSTANCE_ID=$(curl -s http://instance-data/latest/meta-data/instance-id) >> /home/ec2-user/tmp.log
             EC2_INSTANCE_ID=$(curl -s http://instance-data/latest/meta-data/instance-id) 
-
-            echo DISK_IDS=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values=$EC2_INSTANCE_ID --query 'Volumes[*].[VolumeId]' --region=${AWS::Region} --out "text" | cut -f 1) >> /home/ec2-user/tmp.log
             DISK_IDS=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values=$EC2_INSTANCE_ID --query 'Volumes[*].[VolumeId]' --region=${AWS::Region} --out "text" | cut -f 1)
-
-            echo aws ec2 create-tags --resources $DISK_IDS --tags Key=${QSTagKey},Value=${QSTagValue} --region ${AWS::Region} >> /home/ec2-user/tmp.log
             aws ec2 create-tags --resources $DISK_IDS --tags Key=${QSTagKey},Value=${QSTagValue} --region ${AWS::Region}
 
             # Create SSL cert
-            echo "Generating self-signed certificate" >> /home/ec2-user/tmp.log
-
-            # Create and sign certificate
             if [ -d "/etc/ssl/private" ]
             then
               echo "/etc/ssl/private already exists" >> /home/ec2-user/tmp.log
@@ -453,16 +439,11 @@ Resources:
               echo "Creating /etc/ssl/private directory" >> /home/ec2-user/tmp.log
               mkdir /etc/ssl/private
             fi
-
-            echo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/common.key -out /etc/ssl/certs/common.crt -subj "/C=US/ST=Washington/L=Seattle/O=NonProductionTestCert/CN=NonProductionTestCert" >> /home/ec2-user/tmp.log
             openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/common.key -out /etc/ssl/certs/common.crt -subj "/C=US/ST=Washington/L=Seattle/O=NonProductionTestCert/CN=NonProductionTestCert"
             
-            echo /opt/aws/bin/cfn-init -v --stack '${AWS::StackName}' --resource AppLaunchConfig --configsets wordpress_install --region '${AWS::Region}' >> /home/ec2-user/tmp.log
             /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource AppLaunchConfig --configsets wordpress_install --region ${AWS::Region}
 
-            echo cp /tmp/httpd/ssl.conf /etc/httpd/conf.d/ssl.conf >> /home/ec2-user/tmp.log
             cp /tmp/httpd/ssl.conf /etc/httpd/conf.d/ssl.conf
-            echo service httpd restart >> /home/ec2-user/tmp.log
             service httpd restart
 
             ######################################################################
@@ -475,24 +456,18 @@ Resources:
             ######################################################################
 
             # Download the landing page.
-            echo aws s3 cp s3://${QSS3BucketName}/${QSS3KeyPrefix}assets/landing/landing.html $LANDING_PAGE >> /home/ec2-user/tmp.log
             aws s3 cp s3://${QSS3BucketName}/${QSS3KeyPrefix}assets/landing/landing.html $LANDING_PAGE
 
             # Replace relative image links with links to the production S3 source.
-            echo sed -i 's|images|https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}assets/landing/images|g' $LANDING_PAGE >> /home/ec2-user/tmp.log
             sed -i 's|images|https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}assets/landing/images|g' $LANDING_PAGE
             # Inject the landing page branding label.
-            echo sed -i "s|{compliance-body}|$COMPLIANCE_BODY_LABEL|g" $LANDING_PAGE >> /home/ec2-user/tmp.log
             sed -i "s|{compliance-body}|$COMPLIANCE_BODY_LABEL|g" $LANDING_PAGE
             # Inject the survey link parameter.
-            echo sed -i "s|{compliance-body-survey-link}|$COMPLIANCE_SURVEY_LINK|g" $LANDING_PAGE >> /home/ec2-user/tmp.log
             sed -i "s|{compliance-body-survey-link}|$COMPLIANCE_SURVEY_LINK|g" $LANDING_PAGE 
             # Inject the security control matrix file location. 
-            echo sed -i "s|{compliance-body-matrix}|https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}assets/$COMPLIANCE_MATRIX_FILENAME|g" $LANDING_PAGE >> /home/ec2-user/tmp.log
             sed -i "s|{compliance-body-matrix}|https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}assets/$COMPLIANCE_MATRIX_FILENAME|g" $LANDING_PAGE 
-            echo /opt/aws/bin/cfn-signal -e $? --stack '${AWS::StackName}' --resource AppASG --region '${AWS::Region}' >> /home/ec2-user/tmp.log
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource AppASG --region ${AWS::Region}
-            echo "finished" >> /home/ec2-user/tmp.log
+            
           - QSS3Region: !If [ GovCloudEastCondition, s3-us-gov-east-1, !If [ GovCloudWestCondition, s3-us-gov-west-1, s3 ] ]
 
   AppASG:
