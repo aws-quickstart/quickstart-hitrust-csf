@@ -1,38 +1,39 @@
+---
 AWSTemplateFormatVersion: 2010-09-09
 Description: Provides nesting for required stacks to deploy a full sample web application
   with reverse proxy, ELBs, IAM, and other resources (for demonstration/POC/testing)
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
-    - Label:
-        default: Server DNS configuration
-      Parameters:
-      - AWSPublicFQDN
-      - AWSHostedZoneID
-      - SSLCertificateARN
-    - Label:
-        default: AWS Quick Start Configuration
-      Parameters:
-      - QSS3BucketName
-      - QSS3KeyPrefix
-      - QSTagKey
-      - QSTagValue
-    - Label:
-        default: Security Configuration
-      Parameters:
-      - DBPassword
-      - KeyPairName
-      - LogBucket
-    - Label:
-        default: Network Configuration
-      Parameters:
-      - BastionSecurityGroup
-      - PublicSubnetIds
-      - PrivateSubnetAppIds
-      - PrivateSubnetDBIds
-      - SourceCidr
-      - VpcCidr
-      - VpcId
+      - Label:
+         default: Server DNS configuration
+        Parameters:
+         - AWSPublicFQDN
+         - AWSHostedZoneID
+         - SSLCertificateARN
+      - Label:
+         default: AWS Quick Start Configuration
+        Parameters:
+          - QSS3BucketName
+          - QSS3KeyPrefix
+          - QSTagKey
+          - QSTagValue
+      - Label:
+         default: Security Configuration
+        Parameters:
+          - DBPassword
+          - KeyPairName
+          - LogBucket
+      - Label:
+         default: Network Configuration
+        Parameters:
+          - BastionSecurityGroup
+          - PublicSubnetIds
+          - PrivateSubnetAppIds
+          - PrivateSubnetDBIds
+          - SourceCidr
+          - VpcCidr
+          - VpcId
     ParameterLabels:
       AWSHostedZoneID:
         default: DNS Hosted Zone ID
@@ -185,7 +186,7 @@ Mappings:
     eu-central-1:
       AMZNLINUX2HVM: ami-0cc293023f983ed53
     eu-north-1:
-      AMZNLINUX2HVM: ami-3f36be41 
+      AMZNLINUX2HVM: ami-3f36be41
     eu-west-1:
       AMZNLINUX2HVM: ami-0bbc25e23a7640b9b
     eu-west-2:
@@ -208,9 +209,9 @@ Mappings:
       AMZNLINUX2HVM: ami-082b5a644766e0e6f
 
 Conditions:
-  GovCloudCondition: !Or [ !Equals [ !Ref "AWS::Region", 'us-gov-west-1'], !Equals [ !Ref "AWS::Region", 'us-gov-east-1'] ]
-  GovCloudEastCondition: !Equals [ !Ref "AWS::Region", 'us-gov-east-1']
-  GovCloudWestCondition: !Equals [ !Ref "AWS::Region", 'us-gov-west-1']
+  GovCloudCondition: !Or [!Equals [!Ref "AWS::Region", 'us-gov-west-1'], !Equals [!Ref "AWS::Region", 'us-gov-east-1']]
+  GovCloudEastCondition: !Equals [!Ref "AWS::Region", 'us-gov-east-1']
+  GovCloudWestCondition: !Equals [!Ref "AWS::Region", 'us-gov-west-1']
 
 Resources:
   # Create the Elb
@@ -222,7 +223,7 @@ Resources:
         AWSHostedZoneID: !Ref AWSHostedZoneID
         AWSPublicFQDN: !Ref AWSPublicFQDN
         LogBucket: !Ref LogBucket
-        PublicSubnetIds: !Join [ ',', !Ref PublicSubnetIds ]
+        PublicSubnetIds: !Join [',', !Ref PublicSubnetIds]
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         QSTagKey: !Ref QSTagKey
@@ -240,39 +241,39 @@ Resources:
     Properties:
       GroupDescription: Enable HTTPS from the load balancer only
       SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: 443
-        ToPort: 443
-        SourceSecurityGroupId: !GetAtt ElbStack.Outputs.ElbSecurityGroup
-      - IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
-        SourceSecurityGroupId: !Ref BastionSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !GetAtt ElbStack.Outputs.ElbSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref BastionSecurityGroup
       Tags:
-      - Key: !Ref QSTagKey
-        Value: !Ref QSTagValue
+        - Key: !Ref QSTagKey
+          Value: !Ref QSTagValue
       VpcId: !Ref VpcId
 
   # Configure Database
   AppDatabase:
     Type: AWS::CloudFormation::Stack
     DependsOn:
-    - AppInstanceSecurityGroup
+      - AppInstanceSecurityGroup
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/database.template
       Parameters:
-        DBInstanceClass: !If [ GovCloudCondition, !FindInMap [ Database, InstanceClass, GovCloud ], !FindInMap [ Database, InstanceClass, NonGovCloud ] ]
-        DBMasterUser: !FindInMap [ Database, Defaults, User]
-        DBName: !FindInMap [ Database, Defaults, Name]
+        DBInstanceClass: !If [GovCloudCondition, !FindInMap [Database, InstanceClass, GovCloud], !FindInMap [Database, InstanceClass, NonGovCloud]]
+        DBMasterUser: !FindInMap [Database, Defaults, User]
+        DBName: !FindInMap [Database, Defaults, Name]
         DBPassword: !Ref DBPassword
-        DBPrivateSubnets: !Join [ "," , !Ref PrivateSubnetDBIds ]
+        DBPrivateSubnets: !Join [",", !Ref PrivateSubnetDBIds]
         QSTagKey: !Ref QSTagKey
         QSTagValue: !Ref QSTagValue
         SecurityGroupAppInstance: !Ref AppInstanceSecurityGroup
         VpcId: !Ref VpcId
       Tags:
-      - Key: !Ref QSTagKey
-        Value: !Ref QSTagValue
+        - Key: !Ref QSTagKey
+          Value: !Ref QSTagValue
 
   AppInstanceRole:
     Type: AWS::IAM::Role
@@ -280,50 +281,49 @@ Resources:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - ec2.amazonaws.com
-          Action:
-          - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
       Path: /
       Policies:
-      - PolicyName: CreateTags
-        PolicyDocument:
-          Version: 2012-10-17
-          Statement:
-          - Effect: Allow
-            Action:
-            - ec2:Describe*
-            - ec2:CreateTags
-            Resource: "*"
-      - PolicyName: GetObj
-        PolicyDocument:
-          Version: 2012-10-17
-          Statement:
-          - Effect: Allow
-            Action:
-            - s3:GetObject
-            Resource: !Sub
-            - arn:${Partition}:s3:::${QSS3BucketName}/${QSS3KeyPrefix}*
-            - Partition: !If [ GovCloudCondition, aws-us-gov, aws ]
+        - PolicyName: CreateTags
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                 - ec2:Describe*
+                 - ec2:CreateTags
+                Resource: "*"
+        - PolicyName: GetObj
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub
+                  - arn:${Partition}:s3:::${QSS3BucketName}/${QSS3KeyPrefix}*
+                  - Partition: !If [GovCloudCondition, aws-us-gov, aws]
   AppInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
-      - !Ref AppInstanceRole
-  
+        - !Ref AppInstanceRole
   # Launch configuration
   AppLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     DependsOn:
-    - AppDatabase
+      - AppDatabase
     Metadata:
       AWS::CloudFormation::Init:
         configSets:
           wordpress_install:
-          - install_cfn
-          - install_wordpress
+            - install_cfn
+            - install_wordpress
         install_cfn:
           files:
             /etc/cfn/cfn-hup.conf:
@@ -349,8 +349,8 @@ Resources:
                 enabled: true
                 ensureRunning: true
                 files:
-                - /etc/cfn/cfn-hup.conf
-                - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
         install_wordpress:
           packages:
             yum:
@@ -373,26 +373,26 @@ Resources:
               owner: root
               group: root
             /var/www/html/wordpress/wp-config.php:
-              content: !Sub 
-              - | 
-                <?php
-                define('DB_NAME', '${AppDatabase.Outputs.DBName}');
-                define('DB_USER', '${DBUser}');
-                define('DB_PASSWORD', '${DBPassword}');
-                define('DB_HOST', '${AppDatabase.Outputs.EndpointAddress}');
-                define('FORCE_SSL_ADMIN', true);
-                if (strpos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false) { $_SERVER['HTTPS']='on'; }
-                define('DB_CHARSET', 'utf8');
-                define('DB_COLLATE', '');
+              content: !Sub
+                - | 
+                    <?php
+                    define('DB_NAME', '${AppDatabase.Outputs.DBName}');
+                    define('DB_USER', '${DBUser}');
+                    define('DB_PASSWORD', '${DBPassword}');
+                    define('DB_HOST', '${AppDatabase.Outputs.EndpointAddress}');
+                    define('FORCE_SSL_ADMIN', true);
+                    if (strpos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false) { $_SERVER['HTTPS']='on'; }
+                    define('DB_CHARSET', 'utf8');
+                    define('DB_COLLATE', '');
 
-                $table_prefix = 'wp_';
-                define('WP_DEBUG', false);
+                    $table_prefix = 'wp_';
+                    define('WP_DEBUG', false);
 
-                if ( !defined('ABSPATH') )
-                  define('ABSPATH', dirname(__FILE__) . '/');
+                    if ( !defined('ABSPATH') )
+                      define('ABSPATH', dirname(__FILE__) . '/');
 
-                require_once(ABSPATH . 'wp-settings.php');
-              - DBUser: !FindInMap [ Database, Defaults, User ]
+                    require_once(ABSPATH . 'wp-settings.php');
+                - DBUser: !FindInMap [ Database, Defaults, User ]
               mode: '000644'
               owner: root
               group: root
@@ -472,12 +472,11 @@ Resources:
 
   AppASG:
     Type: AWS::AutoScaling::AutoScalingGroup
-    DependsOn: AppLaunchConfig
     Properties:
       HealthCheckGracePeriod: !FindInMap [ Elb, Defaults, HealthCheckGracePeriod ]
       HealthCheckType: ELB
-      MinSize: 2
-      MaxSize: 4
+      MinSize: '2'
+      MaxSize: '4'
       Tags:
       - Key: !Ref QSTagKey
         Value: !Ref QSTagValue
@@ -496,14 +495,14 @@ Resources:
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref AppASG
-      Cooldown: 1
+      Cooldown: '1'
       ScalingAdjustment: 1
   AutoScalingDownApp:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
       AdjustmentType: ChangeInCapacity
       AutoScalingGroupName: !Ref AppASG
-      Cooldown: 1
+      Cooldown: '1'
       ScalingAdjustment: -1
   CWAlarmHighCPUApp:
     Type: AWS::CloudWatch::Alarm

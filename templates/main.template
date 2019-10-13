@@ -207,9 +207,9 @@ Resources:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template
       Parameters:
         AvailabilityZones: !Join [ "," , !Ref AvailabilityZones ]
-        CreateAdditionalPrivateSubnets: true
-        CreatePrivateSubnets: true
-        NumberOfAZs: 2
+        CreateAdditionalPrivateSubnets: 'true'
+        CreatePrivateSubnets: 'true'
+        NumberOfAZs: 'true'
         PrivateSubnet1ACIDR: !FindInMap [ Networking, ProductionCIDR, Private1A ]
         PrivateSubnet1BCIDR: !FindInMap [ Networking, ProductionCIDR, Private1B ]
         PrivateSubnet2ACIDR: !FindInMap [ Networking, ProductionCIDR, Private2A ]
@@ -230,9 +230,9 @@ Resources:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template
       Parameters:
         AvailabilityZones: !Join [ "," , !Ref AvailabilityZones ]
-        CreateAdditionalPrivateSubnets: true
-        CreatePrivateSubnets: true
-        NumberOfAZs: 2
+        CreateAdditionalPrivateSubnets: 'true'
+        CreatePrivateSubnets: 'true'
+        NumberOfAZs: '2'
         PrivateSubnet1ACIDR: !FindInMap [ Networking, ManagementCIDR, Private1A ]
         PrivateSubnet1BCIDR: !FindInMap [ Networking, ManagementCIDR, Private1B ]
         PrivateSubnet2ACIDR: !FindInMap [ Networking, ManagementCIDR, Private2A ]

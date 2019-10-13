@@ -7,12 +7,6 @@ Parameters:
   LogBucket:
     Type: String
     Description: Log bucket
-  ConfigRecorder:
-    Type: String
-    Description: Config Recorder. Empty string will create a new Config Recorder.
-  ConfigDeliveryChannel:
-    Type: String
-    Description: Config Delivery Channel. Must have if Config Recorder specified.
   QSTagKey:
     Type: String
     Description: Tag key to identify resources from this Quick Start
@@ -91,7 +85,7 @@ Resources:
       - Key: !Ref QSTagKey
         Value: !Ref QSTagValue
       Code:
-        ZipFile: | 
+        ZipFile: |
           import boto3
           import json
           from datetime import datetime
