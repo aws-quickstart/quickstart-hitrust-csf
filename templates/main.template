@@ -209,7 +209,7 @@ Resources:
         AvailabilityZones: !Join [ "," , !Ref AvailabilityZones ]
         CreateAdditionalPrivateSubnets: 'true'
         CreatePrivateSubnets: 'true'
-        NumberOfAZs: 'true'
+        NumberOfAZs: '2'
         PrivateSubnet1ACIDR: !FindInMap [ Networking, ProductionCIDR, Private1A ]
         PrivateSubnet1BCIDR: !FindInMap [ Networking, ProductionCIDR, Private1B ]
         PrivateSubnet2ACIDR: !FindInMap [ Networking, ProductionCIDR, Private2A ]

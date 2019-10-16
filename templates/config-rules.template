@@ -165,18 +165,6 @@ Resources:
         Owner: AWS
         SourceIdentifier: ENCRYPTED_VOLUMES
 
-  # EC2: No Public IP association
-  Ec2NoPublicIp:
-    Type: AWS::Config::ConfigRule
-    Properties:
-      Description: Checks whether Amazon Elastic Compute Cloud (Amazon EC2) instances have a public IP association. The rule is NON_COMPLIANT if the publicIp field is present in the Amazon EC2 instance configuration item. This rule applies only to IPv4.
-      Scope:
-        ComplianceResourceTypes:
-        - AWS::EC2::Instance
-      Source:
-        Owner: AWS
-        SourceIdentifier: EC2_INSTANCE_NO_PUBLIC_IP
-
   # ELB: Logging enabled to log bucket
   ElbLogging:
     Type: AWS::Config::ConfigRule
@@ -564,7 +552,6 @@ Resources:
         tag1Value: !Ref QSTagValue
       Scope:
         ComplianceResourceTypes:
-        - AWS::EC2::Volume
         - AWS::EC2::Instance
         - AWS::ElasticLoadBalancingV2::LoadBalancer
         - AWS::RDS::DBInstance

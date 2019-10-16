@@ -114,7 +114,7 @@ Resources:
       Bucket: !Ref LogBucket
       PolicyDocument:
         Version: 2012-10-17
-        Id: DeleteObjectPolicy
+        Id: LogBucketPolicy
         Statement:
         - Sid: DenyDeleteObject
           Effect: Deny
@@ -150,6 +150,14 @@ Resources:
           Condition:
             StringEquals:
               "s3:x-amz-acl": bucket-owner-full-control
+        - Sid: ForceSSL
+          Effect: Deny
+          Principal: "*"
+          Action: s3:*
+          Resource: !Sub arn:aws:s3:::${LogBucket}/*
+          Condition:
+            Bool:
+              "aws:SecureTransport": "false"
 
   CloudTrailHitrustQS:
     Type: AWS::CloudTrail::Trail
@@ -270,8 +278,6 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/config-rules.template
       Parameters:
-        ConfigRecorder: !If [ CreateConfig, !Ref ConfigRecorder, !Ref ConfigRecorderName ]
-        ConfigDeliveryChannel: !If [ CreateConfig, !Ref ConfigDeliveryChannel, !Ref ConfigDeliveryChannelName ]
         LogBucket: !Ref LogBucket
         QSTagKey: !Ref QSTagKey
         QSTagValue: !Ref QSTagValue

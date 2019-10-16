@@ -182,6 +182,23 @@ Resources:
         Value: !Ref QSTagValue
       VersioningConfiguration:
         Status: Enabled
+  LambdaZipsBucketPolicy:
+    DependsOn: CleanupLambdaZipsBucket
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LambdaZipsBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Id: LambdaZipsBucketPolicy
+        Statement:
+        - Sid: ForceSSL
+          Effect: Deny
+          Principal: "*"
+          Action: s3:*
+          Resource: !Sub arn:aws:s3:::${LambdaZipsBucket}/*
+          Condition:
+            Bool:
+              "aws:SecureTransport": "false"
 
   CleanupLambdaZipsBucket:
     Type: AWS::CloudFormation::Stack
