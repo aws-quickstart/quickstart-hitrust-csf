@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "AWSPublicFQDN",
-    "ParameterValue": "hitrust.t.quickstart.awspartner.com"
+    "ParameterValue": "$[taskcat_random-string]-hitrust.t.quickstart.awspartner.com"
   },
   {
     "ParameterKey": "AvailabilityZones",
@@ -17,11 +17,11 @@
   },
   {
     "ParameterKey": "BastionKeyPairName",
-    "ParameterValue": "$[taskcat_getkeypair]"
+    "ParameterValue": "override"
   },
   {
     "ParameterKey": "KeyPairName",
-    "ParameterValue": "$[taskcat_getkeypair]"
+    "ParameterValue": "override"
   },
   {
     "ParameterKey": "SSLCertificateARN",
