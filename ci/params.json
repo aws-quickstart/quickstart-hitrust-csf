@@ -17,11 +17,11 @@
   },
   {
     "ParameterKey": "BastionKeyPairName",
-    "ParameterValue": "override"
+    "ParameterValue": "cikey"
   },
   {
     "ParameterKey": "KeyPairName",
-    "ParameterValue": "override"
+    "ParameterValue": "cikey"
   },
   {
     "ParameterKey": "SSLCertificateARN",
