@@ -169,8 +169,8 @@ Mappings:
   AWSAMIRegionMap:
     AMI:
       AMZNLINUX2HVM: amzn2-ami-hvm-2.0.20190618-x86_64-gp2 
-    ap-east-1:
-      AMZNLINUX2HVM: ami-570c7726
+#    ap-east-1:
+#      AMZNLINUX2HVM: ami-570c7726
     ap-northeast-1:
       AMZNLINUX2HVM: ami-0c3fd0f5d33134a76
     ap-northeast-2:
