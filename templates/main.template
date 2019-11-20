@@ -55,9 +55,9 @@ Metadata:
       AWSPublicFQDN:
         default: Full DNS Name for Web App
       AvailabilityZones:
-        default: AWS Availability Zones
+        default: Availability Zones
       BastionAccessCidr:
-        default: CIDR to access Bastion
+        default: CIDR to access bastion
       BastionKeyPairName:
         default: Bastion key pair
       ConfigRecorder:
@@ -79,7 +79,7 @@ Metadata:
       SSLCertificateARN:
         default: SSL Certificate ARN (Requires matching DNS name)
       SourceCidr:
-        default: Source CIDR for Access
+        default: Source CIDR for access
 
 Parameters:
   AWSHostedZoneID:
