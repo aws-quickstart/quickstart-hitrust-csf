@@ -20,6 +20,12 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
     - Label:
+        default: Network Configuration
+      Parameters:
+      - AvailabilityZones
+      - BastionAccessCidr
+      - SourceCidr
+    - Label:
         default: Logging Configuration
       Parameters:
       - ConfigRecorder
@@ -31,24 +37,18 @@ Metadata:
       - AWSHostedZoneID
       - SSLCertificateARN
     - Label:
-        default: AWS Quick Start Configuration
-      Parameters:
-      - QSS3BucketName
-      - QSS3KeyPrefix
-      - QSTagKey
-      - QSTagValue
-    - Label:
         default: Security Configuration
       Parameters:
       - DBPassword
       - BastionKeyPairName
       - KeyPairName
     - Label:
-        default: Network Configuration
+        default: AWS Quick Start Configuration
       Parameters:
-      - AvailabilityZones
-      - BastionAccessCidr
-      - SourceCidr
+      - QSS3BucketName
+      - QSS3KeyPrefix
+      - QSTagKey
+      - QSTagValue
     ParameterLabels:
       AWSHostedZoneID:
         default: DNS Zone ID
