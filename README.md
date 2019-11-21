@@ -1,7 +1,7 @@
 # quickstart-hitrust-csf
 ## HITRUST on AWS
 
-This Quick Start deploys a model environment on the Amazon Web Services (AWS) Cloud that can help organizations with workloads that fall within the scope of the Health Information Trust Alliance (HITRUST). Its architecture maps to certain technical requirements imposed by HITRUST regulations.
+This Quick Start deploys a model environment on the Amazon Web Services (AWS) Cloud that can help organizations with workloads that fall within the scope of the Health Information Trust Alliance Common Security Framework (HITRUST-CSF). Its architecture maps to certain technical requirements imposed by HITRUST controls.
 
 The Quick Start includes AWS CloudFormation templates to automate building a baseline architecture that fits within your organization’s larger HITRUST program. It also includes a [security controls reference](https://fwd.aws/bzzrk), which maps HITRUST controls to architecture decisions, features, and configuration of the baseline.
 
