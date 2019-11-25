@@ -3,6 +3,7 @@
 # Please consult your legal and compliance teams to determine 
 # the configuration management scope you wish to capture.
 
+Description: 'Config rules that are included.'
 Parameters:
   LogBucket:
     Type: String
