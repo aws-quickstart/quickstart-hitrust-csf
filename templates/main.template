@@ -14,7 +14,7 @@
 #     - database
 
 AWSTemplateFormatVersion: 2010-09-09
-Description: Main template for deploying example HITRUST CSF Quick Start. Creates VPC, 3-tier web app, and logging
+Description: 'Main template for deploying example HITRUST CSF Quick Start. Creates VPC, 3-tier web app, and logging. (qs-1q77hsjug)'
 
 Metadata:
   AWS::CloudFormation::Interface:
