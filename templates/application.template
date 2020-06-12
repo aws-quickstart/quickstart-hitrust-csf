@@ -15,6 +15,7 @@ Metadata:
          default: AWS Quick Start Configuration
         Parameters:
           - QSS3BucketName
+          - QSS3BucketRegion
           - QSS3KeyPrefix
           - QSTagKey
           - QSTagValue
@@ -55,6 +56,8 @@ Metadata:
         default: DB Tier Private Subnet IDs
       QSS3BucketName:
         default: Quick Start S3 Bucket Name
+      QSS3BucketRegion:
+        default: Quick Start S3 bucket region
       QSS3KeyPrefix:
         default: Quick Start S3 Key Prefix
       QSTagKey:
@@ -114,6 +117,10 @@ Parameters:
     Description: S3 bucket name for the Quick Start assets. This string can include
       numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start
       or end with a hyphen (-).
+    Type: String
+  QSS3BucketRegion:
+    Default: 'us-east-1'
+    Description: 'The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.'
     Type: String
   QSS3KeyPrefix:
     AllowedPattern: "^[0-9a-zA-Z-/]*$"
@@ -212,19 +219,25 @@ Conditions:
   GovCloudCondition: !Or [!Equals [!Ref "AWS::Region", 'us-gov-west-1'], !Equals [!Ref "AWS::Region", 'us-gov-east-1']]
   GovCloudEastCondition: !Equals [!Ref "AWS::Region", 'us-gov-east-1']
   GovCloudWestCondition: !Equals [!Ref "AWS::Region", 'us-gov-west-1']
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
 
 Resources:
   # Create the Elb
   ElbStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/elb.template
+      TemplateURL:
+        !Sub
+          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/elb.template
+          - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+            S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
         AWSHostedZoneID: !Ref AWSHostedZoneID
         AWSPublicFQDN: !Ref AWSPublicFQDN
         LogBucket: !Ref LogBucket
         PublicSubnetIds: !Join [',', !Ref PublicSubnetIds]
         QSS3BucketName: !Ref QSS3BucketName
+        QSS3BucketRegion: !Ref QSS3BucketRegion
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         QSTagKey: !Ref QSTagKey
         QSTagValue: !Ref QSTagValue
@@ -260,7 +273,11 @@ Resources:
     DependsOn:
       - AppInstanceSecurityGroup
     Properties:
-      TemplateURL: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/database.template
+      TemplateURL:
+        !Sub
+          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/database.template
+          - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+            S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
         DBInstanceClass: !If [GovCloudCondition, !FindInMap [Database, InstanceClass, GovCloud], !FindInMap [Database, InstanceClass, NonGovCloud]]
         DBMasterUser: !FindInMap [Database, Defaults, User]
@@ -306,8 +323,8 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource: !Sub
-                  - arn:${Partition}:s3:::${QSS3BucketName}/${QSS3KeyPrefix}*
-                  - Partition: !If [GovCloudCondition, aws-us-gov, aws]
+                  - arn:${AWS::Partition}:s3:::${S3Bucket}/${QSS3KeyPrefix}*
+                  - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
   AppInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
