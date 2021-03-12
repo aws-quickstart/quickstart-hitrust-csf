@@ -62,9 +62,9 @@ Metadata:
       BastionKeyPairName:
         default: Bastion key pair
       ConfigRecorder:
-        default: AWS Config Recorder ARN
+        default: AWS Config Recorder Name
       ConfigDeliveryChannel:
-        default: AWS Config Delivery Channel ARN
+        default: AWS Config Delivery Channel Name
       DBPassword:
         default: Database Password
       KeyPairName:
