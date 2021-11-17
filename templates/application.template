@@ -179,45 +179,45 @@ Mappings:
       InstanceSize: t3.small
   AWSAMIRegionMap:
     AMI:
-      AMZNLINUX2HVM: amzn2-ami-hvm-2.0.20190618-x86_64-gp2 
+      AMZNLINUX2HVM: amzn2-ami-hvm-2.0.20211103.0-x86_64-gp2
 #    ap-east-1:
 #      AMZNLINUX2HVM: ami-570c7726
     ap-northeast-1:
-      AMZNLINUX2HVM: ami-0c3fd0f5d33134a76
+      AMZNLINUX2HVM: ami-0e60b6d05dc38ff11
     ap-northeast-2:
-      AMZNLINUX2HVM: ami-095ca789e0549777d
+      AMZNLINUX2HVM: ami-0a5a6128e65676ebb
     ap-south-1:
-      AMZNLINUX2HVM: ami-0d2692b6acea72ee6
+      AMZNLINUX2HVM: ami-0f1fb91a596abf28d
     ap-southeast-1:
-      AMZNLINUX2HVM: ami-01f7527546b557442
+      AMZNLINUX2HVM: ami-024221a59c9020e72
     ap-southeast-2:
-      AMZNLINUX2HVM: ami-0dc96254d5535925f
+      AMZNLINUX2HVM: ami-043e0add5c8665836
     ca-central-1:
-      AMZNLINUX2HVM: ami-0d4ae09ec9361d8ac
+      AMZNLINUX2HVM: ami-0730e12069ab20c26
     eu-central-1:
-      AMZNLINUX2HVM: ami-0cc293023f983ed53
+      AMZNLINUX2HVM: ami-030e490c34394591b
     eu-north-1:
-      AMZNLINUX2HVM: ami-3f36be41
+      AMZNLINUX2HVM: ami-08b0de3847e24ff84
     eu-west-1:
-      AMZNLINUX2HVM: ami-0bbc25e23a7640b9b
+      AMZNLINUX2HVM: ami-09d4a659cdd8677be
     eu-west-2:
-      AMZNLINUX2HVM: ami-0d8e27447ec2c8410
+      AMZNLINUX2HVM: ami-0fc15d50d39e4503c
     eu-west-3:
-      AMZNLINUX2HVM: ami-0adcddd3324248c4c
+      AMZNLINUX2HVM: ami-05f0a049e7aeb407c
     sa-east-1:
-      AMZNLINUX2HVM: ami-058943e7d9b9cabfb
+      AMZNLINUX2HVM: ami-03a343b9045171cec
     us-east-1:
-      AMZNLINUX2HVM: ami-0b898040803850657
+      AMZNLINUX2HVM: ami-04ad2567c9e3d7893
     us-east-2:
-      AMZNLINUX2HVM: ami-0d8f6eb4f641ef691
-    us-gov-east-1:
-      AMZNLINUX2HVM: ami-a2d938d3
-    us-gov-west-1:
-      AMZNLINUX2HVM: ami-e9a9d388
+      AMZNLINUX2HVM: ami-0dd0ccab7e2801812
+#    us-gov-east-1:
+#      AMZNLINUX2HVM: ami-a2d938d3
+#    us-gov-west-1:
+#      AMZNLINUX2HVM: ami-e9a9d388
     us-west-1:
-      AMZNLINUX2HVM: ami-056ee704806822732
+      AMZNLINUX2HVM: ami-0074ef78ecb07948c
     us-west-2:
-      AMZNLINUX2HVM: ami-082b5a644766e0e6f
+      AMZNLINUX2HVM: ami-00be885d550dcee43
 
 Conditions:
   GovCloudCondition: !Or [!Equals [!Ref "AWS::Region", 'us-gov-west-1'], !Equals [!Ref "AWS::Region", 'us-gov-east-1']]
