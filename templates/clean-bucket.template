@@ -1,5 +1,12 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: This CloudFormation Template removes non-versioned files from an S3 Bucket.
+Description: This CloudFormation Template removes non-versioned files from an S3 Bucket. (qs-1sflpub3n)
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W9002
+        - W9003
+        - W9006
 Parameters:
   Bucket:
     Description: The Bucket required for the custom resource to function.
@@ -39,8 +46,8 @@ Resources:
             - s3:GetObjectVersion
             - s3:GetBucketVersioning
             Resource:
-            - !Sub arn:aws:s3:::${Bucket}
-            - !Sub arn:aws:s3:::${Bucket}/*
+            - !Sub arn:${AWS::Partition}:s3:::${Bucket}
+            - !Sub arn:${AWS::Partition}:s3:::${Bucket}/*
   CleanUpS3Bucket:
     Properties:
       DestBucket: !Ref Bucket

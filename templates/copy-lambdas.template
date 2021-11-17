@@ -5,6 +5,13 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: This template creates an S3 bucket in the same region where the stack
   is launched and copy the Lambda functions code from original bucket to the new bucket.
   (qs-1op312ie1)
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W9002
+        - W9003
+        - W9006
 Parameters:
   LogBucket:
     Type: String
@@ -59,7 +66,6 @@ Resources:
       Prefix: !Ref QSS3KeyPrefix
   CopyObjectsFunction:
     Type: AWS::Lambda::Function
-    DependsOn: CopyObjectsRole
     Properties:
       Code:
         ZipFile: |
@@ -147,7 +153,7 @@ Resources:
             Service: lambda.amazonaws.com
         Version: '2012-10-17'
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       Path: "/"
       Policies:
       - PolicyDocument:
@@ -169,8 +175,8 @@ Resources:
             - s3:GetBucketVersioning
             Effect: Allow
             Resource:
-            - !Sub arn:aws:s3:::${LambdaZipsBucket}/${QSS3KeyPrefix}*
-            - !Sub arn:aws:s3:::${LambdaZipsBucket}
+            - !Sub arn:${AWS::Partition}:s3:::${LambdaZipsBucket}/${QSS3KeyPrefix}*
+            - !Sub arn:${AWS::Partition}:s3:::${LambdaZipsBucket}
           Version: '2012-10-17'
         PolicyName: object-copier
     Type: AWS::IAM::Role
@@ -203,15 +209,13 @@ Resources:
           Effect: Deny
           Principal: "*"
           Action: s3:*
-          Resource: !Sub arn:aws:s3:::${LambdaZipsBucket}/*
+          Resource: !Sub arn:${AWS::Partition}:s3:::${LambdaZipsBucket}/*
           Condition:
             Bool:
               "aws:SecureTransport": "false"
 
   CleanupLambdaZipsBucket:
     Type: AWS::CloudFormation::Stack
-    DependsOn:
-    - LambdaZipsBucket
     Properties:
       TemplateURL:
         !Sub

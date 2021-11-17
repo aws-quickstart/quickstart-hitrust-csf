@@ -1,6 +1,13 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Creates Database for WordPress instance
-
+Description: Creates Database for WordPress instance (qs-1sflpub48)
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - E9101
+        - W9002
+        - W9003
+        - W9006
 Parameters:
   DBInstanceClass:
     Type: String
@@ -18,6 +25,7 @@ Parameters:
     Description: Database password
   DBPrivateSubnets:
     Type: List<AWS::EC2::Subnet::Id>
+    Description: Private subnets for database
   QSTagKey:
     Type: String
     Description: Tag key to identify resources from this Quick Start
@@ -69,9 +77,6 @@ Resources:
         Value: !Ref QSTagValue
   DBMySQL:
     Type: AWS::RDS::DBInstance
-    DependsOn:
-    - DBSubnetGroup
-    - DBSecurityGroup
     Properties:
       AllocatedStorage: !FindInMap [ RDS, Storage, AllocatedStorage]
       BackupRetentionPeriod: !FindInMap [ RDS, Defaults, BackupRetention ]

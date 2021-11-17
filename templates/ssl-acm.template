@@ -1,7 +1,13 @@
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Creates R53 records and ACM Certificate. ACM certificate is for all subdomains for the specified domain name.
-
+Description: Creates R53 records and ACM Certificate. ACM certificate is for all subdomains for the specified domain name. (qs-1sflpub56)
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W9002
+        - W9003
+        - W9006
 Parameters:
   DomainName:
     Type: String
@@ -11,7 +17,7 @@ Parameters:
     Description: Route 53 Hosted Zone ID to use. If left blank, Route 53
       will not be configured and DNS must be setup manually. If you specify this,
       you must also specify DomainName
-    MaxLength: 32
+#    MaxLength: 32
   LogBucket:
       Type: String
       Description: Bucket to write logs to
@@ -44,7 +50,10 @@ Parameters:
   QSTagValue:
     Type: String
     Description: Tag value to identify resources from this Quick Start
-  
+
+Conditions:
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
+
 Resources:
   CopyLambdaStack:
     Type: AWS::CloudFormation::Stack
@@ -75,7 +84,7 @@ Resources:
             Service: lambda.amazonaws.com
           Action: sts:AssumeRole
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Path: "/"
       Policies:
       - PolicyName: lambda-acm
@@ -98,7 +107,7 @@ Resources:
             Action:
             - route53:ChangeResourceRecordSets
             Resource:
-            - !Sub arn:aws:route53:::hostedzone/${HostedZoneID}
+            - !Sub arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneID}
           - Effect: Allow
             Action:
             - logs:FilterLogEvents
@@ -106,7 +115,6 @@ Resources:
             - "*"
   ACMCertificateLambda:
     Type: AWS::Lambda::Function
-    DependsOn: CopyLambdaStack
     Properties:
       Description: Creates and verifies an ACM certificate using DNS validation and Route53
       Handler: lambda_function.handler

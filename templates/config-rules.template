@@ -3,7 +3,14 @@
 # Please consult your legal and compliance teams to determine 
 # the configuration management scope you wish to capture.
 
-Description: 'Config rules that are included.'
+Description: Config rules that are included. (qs-1sflpub3u)
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W9002
+        - W9003
+        - W9006
 Parameters:
   LogBucket:
     Type: String
@@ -35,8 +42,8 @@ Resources:
           Action:
             - "sts:AssumeRole"
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/service-role/AWSConfigRulesExecutionRole
-      - arn:aws:iam::aws:policy/service-role/AWSConfigRole
+      - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole'
+      - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSConfigRole'
       Policies:
         - PolicyName: DescribeForConfig
           PolicyDocument:
@@ -56,7 +63,6 @@ Resources:
   # Config: Recorder enabled
   TriggerConfigRecorderEnabled:
     Type: "AWS::Lambda::Permission"
-    DependsOn: LambdaConfigRecorderEnabled
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt LambdaConfigRecorderEnabled.Arn
@@ -75,7 +81,6 @@ Resources:
           MessageType: ScheduledNotification
   LambdaConfigRecorderEnabled:
     Type: AWS::Lambda::Function
-    DependsOn: LambdaConfigRole
     Properties:
       Description: Checks if Config Recorder is enabled
       Handler: index.handler
@@ -184,7 +189,6 @@ Resources:
   # ELB: Encryption enabled (443)
   TriggerALBEncryption:
     Type: "AWS::Lambda::Permission"
-    DependsOn: LambdaALBEncryption
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt LambdaALBEncryption.Arn
@@ -210,7 +214,6 @@ Resources:
           MessageType: ConfigurationItemChangeNotification
   LambdaALBEncryption:
     Type: AWS::Lambda::Function
-    DependsOn: LambdaConfigRole
     Properties:
       Description: Checks if ALB only allows HTTPS
       Handler: index.handler
@@ -443,7 +446,6 @@ Resources:
   # Security Groups: Block port 80
   TriggerSecurityGroupPortBlocked:
     Type: "AWS::Lambda::Permission"
-    DependsOn: LambdaSecurityGroupPortBlocked
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt LambdaSecurityGroupPortBlocked.Arn
@@ -468,7 +470,6 @@ Resources:
           MessageType: ConfigurationItemChangeNotification
   LambdaSecurityGroupPortBlocked:
     Type: AWS::Lambda::Function
-    DependsOn: LambdaConfigRole
     Properties:
       Description: Checks if Security Groups don't have a specific port open
       Handler: index.handler

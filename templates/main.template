@@ -17,6 +17,11 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: 'Main template for deploying example HITRUST CSF Quick Start. Creates VPC, 3-tier web app, and logging. (qs-1q77hsjug)'
 
 Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W9006
+        - W9901
   AWS::CloudFormation::Interface:
     ParameterGroups:
     - Label:
@@ -189,7 +194,6 @@ Mappings:
       InstanceType: t2.medium
   
 Conditions:
-  GovCloudCondition: !Or [ !Equals [ !Ref "AWS::Region", us-gov-west-1], !Equals [ !Ref "AWS::Region", us-gov-east-1]]
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
   
 Resources:
@@ -270,9 +274,6 @@ Resources:
     
   VpcNetworking:
     Type: AWS::CloudFormation::Stack
-    DependsOn:
-    - ManagementVpc
-    - ProductionVpc
     Properties:
       TemplateURL:
         !Sub
@@ -299,7 +300,6 @@ Resources:
   Bastion:
     Type: AWS::CloudFormation::Stack
     DependsOn:
-    - ManagementVpc
     - VpcNetworking
     Properties:
       TemplateURL:
@@ -324,9 +324,6 @@ Resources:
 
   Application:
     Type: AWS::CloudFormation::Stack
-    DependsOn: 
-    - ProductionVpc
-    - Bastion
     Properties:
       TemplateURL:
         !Sub

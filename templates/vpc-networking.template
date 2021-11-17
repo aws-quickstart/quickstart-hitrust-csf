@@ -1,5 +1,12 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Set up VPC peering between VPCs
+Description: Set up VPC peering between VPCs (qs-1sflpub5h)
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W9002
+        - W9003
+        - W9006
 Parameters:
   ProductionVpcId:
     Type: AWS::EC2::VPC::Id
@@ -60,42 +67,36 @@ Resources:
         Value: !Ref QSTagValue
   RouteManagementProductionPrivateA:
     Type: AWS::EC2::Route
-    DependsOn: VpcPeeringConnection
     Properties:
       RouteTableId: !Ref ManagementRouteTablePrivateA
       VpcPeeringConnectionId: !Ref VpcPeeringConnection
       DestinationCidrBlock: !Ref ProductionVpcCidr
   RouteManagementProductionPrivateB:
     Type: AWS::EC2::Route
-    DependsOn: VpcPeeringConnection
     Properties:
       RouteTableId: !Ref ManagementRouteTablePrivateB
       VpcPeeringConnectionId: !Ref VpcPeeringConnection
       DestinationCidrBlock: !Ref ProductionVpcCidr
   RouteManagementProductionPublic:
     Type: AWS::EC2::Route
-    DependsOn: VpcPeeringConnection
     Properties:
       RouteTableId: !Ref ManagementRouteTablePublic
       VpcPeeringConnectionId: !Ref VpcPeeringConnection
       DestinationCidrBlock: !Ref ProductionVpcCidr
   RouteProductionManagementPrivateA:
     Type: AWS::EC2::Route
-    DependsOn: VpcPeeringConnection
     Properties:
       RouteTableId: !Ref ProductionRouteTablePrivateA
       VpcPeeringConnectionId: !Ref VpcPeeringConnection
       DestinationCidrBlock: !Ref ManagementVpcCidr
   RouteProductionManagementPrivateB:
     Type: AWS::EC2::Route
-    DependsOn: VpcPeeringConnection
     Properties:
       RouteTableId: !Ref ProductionRouteTablePrivateB
       VpcPeeringConnectionId: !Ref VpcPeeringConnection
       DestinationCidrBlock: !Ref ManagementVpcCidr
   RouteProductionManagementPublic:
     Type: AWS::EC2::Route
-    DependsOn: VpcPeeringConnection
     Properties:
       RouteTableId: !Ref ProductionRouteTablePublic
       VpcPeeringConnectionId: !Ref VpcPeeringConnection

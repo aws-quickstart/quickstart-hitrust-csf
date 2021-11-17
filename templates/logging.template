@@ -1,8 +1,14 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: CloudFormation Template for basic logging functionality. Sets up ELB logging and Config if 
-  the Config Recorder and Config Delivery Channel are not yet set up.
-
+  the Config Recorder and Config Delivery Channel are not yet set up. (qs-1sflpub4u)
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W9002
+        - W9003
+        - W9006
 Parameters:
   ConfigRecorderName:
     Type: String
@@ -86,7 +92,7 @@ Mappings:
     sa-east-1:
       Principal: '507241528517'
     us-gov-west-1:
-      Princiapl: '048591011584'
+      Principal: '048591011584'
     us-gov-east-1:
       Principal: '190560391635'
     cn-north-1:
@@ -96,6 +102,7 @@ Mappings:
 
 Conditions:
   CreateConfig: !And [ !Equals [ !Ref ConfigRecorderName, '' ], !Equals [ !Ref ConfigDeliveryChannelName, '' ] ]
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
 
 Resources:
   LogBucket:
@@ -124,32 +131,32 @@ Resources:
           Effect: Deny
           Principal: "*"
           Action: "s3:DeleteObject"
-          Resource: !Sub arn:aws:s3:::${LogBucket}/*
+          Resource: !Sub arn:${AWS::Partition}:s3:::${LogBucket}/*
         - Sid: DenyDeleteBucket
           Effect: Deny
           Principal: "*"
           Action: "s3:DeleteBucket"
-          Resource: !Sub arn:aws:s3:::${LogBucket}
+          Resource: !Sub arn:${AWS::Partition}:s3:::${LogBucket}
         - Sid: ElbLogs
           Effect: Allow
           Principal:
             AWS:
             - !FindInMap [ ElbLogging, !Ref "AWS::Region" , Principal ]
           Action: "s3:PutObject"
-          Resource: !Sub arn:aws:s3:::${LogBucket}/*
+          Resource: !Sub arn:${AWS::Partition}:s3:::${LogBucket}/*
         - Sid: AllowCloudTrailAclCheck
           Effect: Allow
           Principal:
             Service: cloudtrail.amazonaws.com
           Action: s3:GetBucketAcl
-          Resource: !Sub arn:aws:s3:::${LogBucket}
+          Resource: !Sub arn:${AWS::Partition}:s3:::${LogBucket}
         - Sid: AllowCloudTrailWrite
           Effect: Allow
           Principal:
             Service: cloudtrail.amazonaws.com
           Action: s3:PutObject
           Resource: !Sub
-            - arn:aws:s3:::${LogBucket}/${LogPrefix}/AWSLogs/${AWS::AccountId}/*
+            - arn:${AWS::Partition}:s3:::${LogBucket}/${LogPrefix}/AWSLogs/${AWS::AccountId}/*
             - { LogPrefix: !FindInMap [ CloudTrail, S3, LogPrefix ] }
           Condition:
             StringEquals:
@@ -158,7 +165,7 @@ Resources:
           Effect: Deny
           Principal: "*"
           Action: s3:*
-          Resource: !Sub arn:aws:s3:::${LogBucket}/*
+          Resource: !Sub arn:${AWS::Partition}:s3:::${LogBucket}/*
           Condition:
             Bool:
               "aws:SecureTransport": "false"
@@ -166,7 +173,6 @@ Resources:
   CloudTrailHitrustQS:
     Type: AWS::CloudTrail::Trail
     DependsOn:
-    - LogBucket
     - LogBucketPolicy
     Properties:
       EnableLogFileValidation: true
@@ -181,8 +187,6 @@ Resources:
   # Cleans up log bucket when stack is deleted/rolled back
   CleanupLogBucket:
     Type: AWS::CloudFormation::Stack
-    DependsOn:
-    - LogBucket
     Properties:
       TemplateURL:
         !Sub
@@ -211,8 +215,8 @@ Resources:
           Action:
             - "sts:AssumeRole"
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/service-role/AWSConfigRulesExecutionRole
-      - arn:aws:iam::aws:policy/service-role/AWSConfigRole
+      - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSConfigRulesExecutionRole
+      - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSConfigRole
   ConfigRolePolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -223,7 +227,7 @@ Resources:
         - Effect: Allow
           Action:
           - s3:PutObject
-          Resource: !Sub arn:aws:s3:::${LogBucket}/config*
+          Resource: !Sub arn:${AWS::Partition}:s3:::${LogBucket}/config*
           Condition:
             StringLike:
               s3:x-amz-acl: bucket-owner-full-control
@@ -247,7 +251,6 @@ Resources:
   ConfigSNSPolicy:
     Type: AWS::SNS::TopicPolicy
     Condition: CreateConfig
-    DependsOn: ConfigSNS
     Properties:
       PolicyDocument:
         Id: ConfigSNSPolicy

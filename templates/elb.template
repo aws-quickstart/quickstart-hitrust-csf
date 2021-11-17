@@ -1,5 +1,12 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Configures an ELB and SSL Certificate
+Description: Configures an ELB and SSL Certificate (qs-1sflpub4e)
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W9002
+        - W9003
+        - W9006
 Parameters:
   AWSHostedZoneID:
     Description: DNS Zone ID to contain the cluster's DNS entry (blank = no DNS)
@@ -131,9 +138,6 @@ Resources:
       VpcId: !Ref VpcId
   ElbListenerHTTPS:
     Type: AWS::ElasticLoadBalancingV2::Listener
-    DependsOn:
-    - Elb
-    - ElbTargetGroupHTTPS
     Properties:
       Certificates: 
       - CertificateArn: !If [ NoSSLCertificate, !GetAtt ConfigureSSLStack.Outputs.ACMCertificate, !Ref SSLCertificateARN ]
@@ -160,8 +164,6 @@ Resources:
 
   RecordAlias:
     Type: AWS::Route53::RecordSet
-    DependsOn:
-    - Elb
     Properties:
       AliasTarget:
         DNSName: !GetAtt Elb.DNSName
