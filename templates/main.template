@@ -22,6 +22,8 @@ Metadata:
       ignore_checks:
         - W9006
         - W9901
+  QuickStartDocumentation:
+    EntrypointName: "Parameters for deploying into new VPCs"
   AWS::CloudFormation::Interface:
     ParameterGroups:
     - Label:
