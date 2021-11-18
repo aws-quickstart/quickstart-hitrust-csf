@@ -2,4 +2,12 @@
 // Briefly describe the software. Use consistent and clear branding. 
 // Include the benefits of using the software on AWS, and provide details on usage scenarios.
 
-<Describe how the software works on AWS.>
+The HITRUST CSF (Health Information Trust Alliance Common Security Framework) is a security framework that incorporates and leverages security requirements in existing frameworks, originating from global entities (GDPR ISO), US federal (e.g., FFIEC, HIPAA and HITECH), state, third party (e.g., PCI and COBIT), and other US government agencies (e.g., NIST, FTC, and CMS).  
+
+HITRUST has developed the HITRUST CSF Assurance Program, which encompasses the common requirements, methodology, and tools that enable both an organization and its business partners to take a consistent and incremental approach to managing compliance. Further, it allows business partners and vendors to assess and report against multiple sets of requirements.  
+
+Security and Compliance is a shared responsibility between AWS and the customer. This shared responsibility model can help lessen the customer’s operational burden as AWS operates, manages and controls the components from the host operating system and virtualization layer down to the physical security of the facilities in which the service operates. AWS customers can design and implement an AWS environment, and use AWS services in a manner that supports satisfying the requirements of HITRUST CSF. Customers can also leverage certain controls established under the HITRUST CSF validated assessment of AWS services.
+
+AWS services have been assessed under the HITRUST CSF Assurance Program by an approved HITRUST CSF Assessor to meet HITRUST CSF v9.1 Certification Criteria. The HITRUST CSF certification of AWS is valid for two years, and can be accessed at https://console.aws.amazon.com/artifact/.
+
+AWS customers can design and implement an AWS environment, and use AWS services to help them meet the requirements of the HITRUST CSF.  Customers may look to leverage the AWS HITRUST CSF certification to support their own HITRUST CSF certification. See AWS HITRUST CSF Certification at https://console.aws.amazon.com/artifact/. AWS provides additional workbooks, whitepapers, and best practice guides on our https://aws.amazon.com/compliance/resources/[AWS Compliance Resources page].

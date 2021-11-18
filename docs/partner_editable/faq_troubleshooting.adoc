@@ -17,7 +17,16 @@ For more information, see https://docs.aws.amazon.com/AWSCloudFormation/latest/U
 
 *A.* Launch the Quick Start templates from the links in this guide or from another S3 bucket. If you deploy the templates from a local copy on your computer or from a location other than an S3 bucket, you might encounter template-size limitations. For more information, see http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html[AWS CloudFormation quotas^].
 
+*Q.* The DNS validation for the SSL certificate times out.
 
-== Troubleshooting
+*A.* You might encounter this issue if your DNS provider is not Route 53. In this case, you must add DNS records to your DNS registrar for the routing to work. For more information, see the following pages in the AWS documentation:
 
-<Steps for troubleshooting the deployment.>
+* https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate-dns.html[Use DNS to Validate Domain Ownership]
+* https://docs.aws.amazon.com/acm/latest/userguide/how-domain-validation-works.html[How Domain Validation Works]
+
+*Q.* The DNS validation appears to have completed successfully, but the Quick Start errors out during the ACM certificate DNS step.
+
+*A.* If you run into this issue: 
+
+* If you already have a wildcard ACM certificate in the AWS Region where you deployed the Quick Start, you can skip the ACM certificate DNS step by supplying the ARN of your pre-existing certificate in the SSLCertificateARN parameter. You can also import certificates in the ACM console and use the ARN of your uploaded certificate. 
+* Alternatively, make sure that DNS validation is working by provisioning certificates outside the Quick Start, following the instructions in the links provided for the previous Q&A. You can use the certificate you created in the SSLCertificateARN parameter to skip the ACM certificate DNS step.

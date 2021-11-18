@@ -2,8 +2,6 @@
 
 This Quick Start provides two deployment options:
 
-* *Deploy {partner-product-short-name} into a new VPC*. This option builds a new AWS environment consisting of the VPC, subnets, NAT gateways, security groups, bastion hosts, and other infrastructure components. It then deploys {partner-product-short-name} into this new VPC.
-* *Deploy {partner-product-short-name} into an existing VPC*. This option provisions {partner-product-short-name} in your existing AWS infrastructure.
+* *Deploy {partner-product-short-name} into new VPCs*. This option builds a new AWS environment consisting of the VPCs, subnets, NAT gateways, security groups, bastion hosts, and other infrastructure components. It then deploys an example WordPress site into the new production VPC.
 
-The Quick Start provides separate templates for these options. It also lets you configure Classless Inter-Domain Routing (CIDR) blocks, instance types, and {partner-product-short-name} settings, as discussed later in this guide.
 

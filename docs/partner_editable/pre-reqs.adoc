@@ -2,14 +2,5 @@
 
 ==== Prepare your AWS account
 
-Verify that your AWS account has the permissions required to create the resources listed in the link:#_resource_quotas[Resource quotas] section of this guide.
+To deploy the Quick Start, you will need to have a domain name that you own and is managed by Route 53.
 
-// Describe any setup required in the AWS account prior to template launch.
-
-==== Prepare your {partner-company-name} account
-
-// Describe any setup required in the partner portal/account prior to template launch.
-
-==== Prepare for the deployment
-
-// Describe any preparation required to complete the product build, such as obtaining licenses or placing files in S3.
