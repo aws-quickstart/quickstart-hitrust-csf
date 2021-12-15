@@ -10,6 +10,6 @@
 |Auto Scaling groups |2
 |Application Load Balancers |1
 |Amazon S3 buckets |2
-|t3.small instances |3-5
+|t3.small instances |3–5
 |EC2 key pairs |2
 |===
