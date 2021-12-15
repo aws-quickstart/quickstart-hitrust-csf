@@ -2,5 +2,5 @@
 
 ==== Prepare your AWS account
 
-To deploy the Quick Start, you will need to have a domain name that you own and is managed by Route 53.
+To deploy this Quick Start, you must have your own domain name, and it must be managed by Amazon Route 53.
 

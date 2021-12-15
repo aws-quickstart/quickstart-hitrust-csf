@@ -4,10 +4,10 @@
 
 *Q.* I encountered a *CREATE_FAILED* error when I launched the Quick Start.
 
-*A.* If AWS CloudFormation fails to create the stack, relaunch the template with *Rollback on failure* set to *Disabled*. This setting is under *Advanced* in the AWS CloudFormation console on the *Configure stack options* page. With this setting, the stack’s state is retained, and the instance keeps running so that you can troubleshoot the issue. (For Windows, look at the log files in `%ProgramFiles%\Amazon\EC2ConfigService` and `C:\cfn\log`.)
+*A.* If AWS CloudFormation fails to create the stack, relaunch the template with *Rollback on failure* set to *Disabled*. This setting is under *Advanced* in the AWS CloudFormation console on the *Configure stack options* page. With this setting, the stack’s state is retained, and the instance continues running so that you can troubleshoot the issue. (For Windows, review the log files in `%ProgramFiles%\Amazon\EC2ConfigService` and `C:\cfn\log`.)
 // Customize this answer if needed. For example, if you’re deploying on Linux instances, either provide the location for log files on Linux or omit the final sentence. If the Quick Start has no EC2 instances, revise accordingly (something like "and the assets keep running").
 
-WARNING: When you set *Rollback on failure* to *Disabled*, you continue to incur AWS charges for this stack. Delete the stack when you finish troubleshooting.
+WARNING: When you set *Rollback on failure* to *Disabled*, you continue to incur AWS charges for the stack. Delete the stack when you finish troubleshooting.
 
 For more information, see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html[Troubleshooting AWS CloudFormation^].
 
@@ -19,14 +19,14 @@ For more information, see https://docs.aws.amazon.com/AWSCloudFormation/latest/U
 
 *Q.* The DNS validation for the SSL certificate times out.
 
-*A.* You might encounter this issue if your DNS provider is not Route 53. In this case, you must add DNS records to your DNS registrar for the routing to work. For more information, see the following pages in the AWS documentation:
+*A.* You might encounter this issue if your DNS provider is not Amazon Route 53. In this case, you must add DNS records to your DNS registrar for the routing to work. For more information, see the following pages:
 
-* https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate-dns.html[Use DNS to Validate Domain Ownership]
-* https://docs.aws.amazon.com/acm/latest/userguide/how-domain-validation-works.html[How Domain Validation Works]
+* https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate-dns.html[Use DNS to Validate Domain Ownership^]
+* https://docs.aws.amazon.com/acm/latest/userguide/how-domain-validation-works.html[How Domain Validation Works^]
 
 *Q.* The DNS validation appears to have completed successfully, but the Quick Start errors out during the ACM certificate DNS step.
 
 *A.* If you run into this issue: 
 
-* If you already have a wildcard ACM certificate in the AWS Region where you deployed the Quick Start, you can skip the ACM certificate DNS step by supplying the ARN of your pre-existing certificate in the SSLCertificateARN parameter. You can also import certificates in the ACM console and use the ARN of your uploaded certificate. 
-* Alternatively, make sure that DNS validation is working by provisioning certificates outside the Quick Start, following the instructions in the links provided for the previous Q&A. You can use the certificate you created in the SSLCertificateARN parameter to skip the ACM certificate DNS step.
+* If you already have a wildcard ACM certificate in the AWS Region where you deployed the Quick Start, you can skip the ACM certificate DNS step by supplying the ARN of your preexisting certificate in the `SSLCertificateARN` parameter. You can also import certificates in the ACM console and use the ARN of your uploaded certificate. 
+* Alternatively, ensure that DNS validation is working by provisioning certificates outside the Quick Start by following the instructions in the links provided for the previous bullet point. Use the certificate you created in the `SSLCertificateARN` parameter to skip the ACM certificate DNS step.

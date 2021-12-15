@@ -3,22 +3,22 @@
 
 == Test the deployment
 
-1. Navigate to the landing page. In the *Outputs* tab shown in the previous figure, select LandingPageURL. If you click on the link, the following webpage appears.
+. Navigate to the landing page. In the *Outputs* tab shown in the previous figure, choose *LandingPageURL*. The following webpage appears:
 
 [#test1]
-.Confirmation on webpage after successful launch 
+.Confirmation on webpage after successful launch
 image::../images/image1.png[test1]
 
 [start=2]
-2. Next, confirm that WordPress is installed correctly. Note down the application URL and navigate to ApplicationURL/wordpress/. Enter the requisite information, if you choose to set up the site.
-3. Navigate to the AWS Config console. Here, you can see the status of your configuration. Note that AWS Config will monitor all resources in the AWS Region you deploy in, not just what is in this particular Quick Start. For example, an Amazon Elastic Block Store (Amazon EBS) volume may not be encrypted elsewhere.
+. Confirm that WordPress is installed correctly. Note the application's URL, and navigate to `ApplicationURL/wordpress/`. If you want to set up the site, enter the requisite information.
+. Navigate to the AWS Config console, where you can see the configuration status. Note that AWS Config monitors all resources in the AWS Region you deploy in, not just what's from this deployment. For example, an Amazon Elastic Block Store (Amazon EBS) volume may not be encrypted elsewhere.
 
 [#test2]
 .Resource monitoring
 image::../images/image2.png[test2]
 
 [start=4]
-4. You can also check that all your S3 buckets have public read access disabled.
+4. Disable read access for your Amazon S3 buckets.
 
 [#test3]
 .S3 buckets with public read access disabled
