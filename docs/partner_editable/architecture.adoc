@@ -15,7 +15,7 @@ As shown in <<architecture1>>, the Quick Start sets up the following:
 * In the public subnets: 
 ** Managed network address translation (NAT) gateways to allow outbound internet access for resources in the private subnets.
 ** In the management VPC, a Linux bastion host in an Auto Scaling group to allow inbound Secure Shell (SSH) access to Amazon Elastic Compute Cloud (Amazon EC2) instances in the private subnets.
-* Security groups for Amazon EC2 instances and load balancers, used in the sample application stack. The security groups limit access to only necessary services and disallow unencrypted traffic (e.g., HTTP port 80).
+* Security groups for Amazon EC2 instances and load balancers, used in the sample application stack. The security groups limit access to only necessary services and disallow unencrypted traffic (for example, HTTP port 80).
 * An Amazon Simple Storage Service (Amazon S3) bucket for encrypted log content.
 * In the private subnets in the production VPC:
 ** An encrypted Multi-AZ Amazon Relational Database Service (Amazon RDS) MySQL database and a standby instance in a second private subnet.
