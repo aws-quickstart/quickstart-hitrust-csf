@@ -1,7 +1,7 @@
 // Edit this placeholder text to accurately describe your architecture.
 
-This Quick Start provides two deployment options:
+This Quick Start provides the following deployment option:
 
-* *Deploy {partner-product-short-name} into new VPCs*. This option builds a new AWS environment consisting of the VPCs, subnets, NAT gateways, security groups, bastion hosts, and other infrastructure components. It then deploys an example WordPress site into the new production VPC.
+* *Deploy {partner-product-short-name} into new VPCs*. This builds a new AWS environment consisting of the VPCs, subnets, NAT gateways, security groups, bastion hosts, and other infrastructure components. It then deploys an example WordPress site into a new production VPC.
 
 
