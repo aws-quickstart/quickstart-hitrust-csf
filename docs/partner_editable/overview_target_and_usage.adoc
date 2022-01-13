@@ -4,8 +4,8 @@
 
 === AWS compliance architectures
 
-AWS compliance solutions help streamline, automate, and implement secure baselines in AWS—from initial design to operational security readiness. They incorporate the expertise of AWS solutions architects and security and compliance personnel to help you easily build a secure and reliable architecture through automation.
+AWS compliance solutions help streamline, automate, and implement secure baselines in AWS, from initial design to operational security readiness. They incorporate the expertise of AWS solutions architects and security and compliance personnel to help you  build an automated architecture.
 
-This Quick Start includes AWS CloudFormation templates to automate building a baseline architecture that fits within your organization’s larger Health Information Trust Alliance Common Security Framework (HITRUST-CSF) program. It also includes a https://go.hitrustalliance.net/SR-Custom-Matrix-AWS[HITRUST CSF security controls mapping], which maps HITRUST controls to architecture decisions, features, and configuration of the baseline.
+This Quick Start includes AWS CloudFormation templates to automate building a baseline architecture that fits within your organization’s larger Health Information Trust Alliance Common Security Framework (HITRUST-CSF) program. It also includes https://go.hitrustalliance.net/SR-Custom-Matrix-AWS[HITRUST CSF security controls mapping^], which maps HITRUST controls to architecture decisions, features, and the baseline configuration.
 
-This Quick Start is for health IT infrastructure architects, administrators, compliance professionals, and DevOps professionals who are planning to implement or extend their HITRUST workloads to the AWS Cloud.
+This deployment is for health IT infrastructure architects, administrators, compliance professionals, and DevOps professionals who want to implement or extend HITRUST workloads to the AWS Cloud.

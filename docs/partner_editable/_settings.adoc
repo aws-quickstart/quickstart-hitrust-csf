@@ -11,14 +11,14 @@
 //:partner-contributors: Shuai Ye, Michael McConnell, and John Smith, {partner-company-name}
 //:other-contributors: Akua Mansa, Trek10
 //:aws-contributors: Janine Singh, AWS IoT Partner team
-:quickstart-contributors: AWS Healthcare and AWS Quick Start teams
+:quickstart-contributors: AWS Healthcare and AWS Infrastructure & Automation teams
 // For deployment_time, use minutes if deployment takes an hour or less, 
 // for example, 30 minutes or 60 minutes. 
 // Use hours for deployment times greater than 60 minutes (rounded to a quarter hour),
 // for example, 1.25 hours, 2 hours, 2.5 hours.
 :deployment_time: 30 minutes
 :default_deployment_region: us-east-1
-:parameters_as_appendix:
+:no_parameters:
 // Uncomment the following attribute only if your Quick Start requires custom info (e.g., the product is limited to a specific Region and that will not change). When this attribute is uncommented, any content in the partner-editable/regions.adoc file appears in the "Supported AWS Regions" section of the generated guide instead of the boilerplate info in regions_default.adoc.
 // :custom_supported_regions:
 // Uncomment the following two attributes if you are using an AWS Marketplace listing.
