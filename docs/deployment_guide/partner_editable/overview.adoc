@@ -1,10 +1,9 @@
 This guide covers the information you need to deploy the {partner-product-name} Partner Solution in the AWS Cloud.
 
-// Fill in the info in <angle brackets> for use on the landing page only: 
-This Amazon Web Services (AWS) Partner Solution deploys [<product name>](<partner's marketing product page>) in the AWS Cloud so that <purpose>. This solution is for <target users> who want to <do what> so that <why>. For more information, refer to the [<product name> documentation](<URL>).
+=== AWS compliance architectures
 
-// Deploying this solution does not guarantee an organization’s compliance with any laws, certifications, policies, or other regulations. [Uncomment this statement only for solutions that relate to compliance. We'll add the corresponding reference part to the landing page and get legal approval before publishing.]
+AWS compliance solutions help streamline, automate, and implement secure baselines in AWS, from initial design to operational security readiness. They incorporate the expertise of AWS solutions architects and security and compliance personnel to help you build an automated architecture.
 
-// For advanced information about the product, troubleshooting, or additional functionality, refer to the https://{partner-solution-github-org}.github.io/{partner-solution-project-name}/operational/index.html[Operational Guide^].
+This Partner Solution includes AWS CloudFormation templates to automate building a baseline architecture that fits within your organization’s larger Health Information Trust Alliance Common Security Framework (HITRUST-CSF) program. It also includes https://go.hitrustalliance.net/SR-Custom-Matrix-AWS[HITRUST CSF security controls mapping^], which maps HITRUST controls to architecture decisions, features, and the baseline configuration.
 
-// For information about using this Partner Solution for migrations, refer to the https://{partner-solution-github-org}.github.io/{partner-solution-project-name}/migration/index.html[Migration Guide^].
+This deployment is for health IT infrastructure architects, administrators, compliance professionals, and DevOps professionals who want to implement or extend HITRUST workloads to the AWS Cloud.
