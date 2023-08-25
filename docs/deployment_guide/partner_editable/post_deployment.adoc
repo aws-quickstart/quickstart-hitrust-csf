@@ -8,7 +8,7 @@
 
 [#test1]
 .Confirmation on webpage after successful launch
-image::../images/image1.png[test1]
+image::../docs/deployment_guide/images/image1.png[test1]
 
 [start=2]
 . Confirm that WordPress is installed correctly. Note the application's URL, and navigate to `ApplicationURL/wordpress/`. If you want to set up the site, enter the requisite information.
@@ -16,11 +16,11 @@ image::../images/image1.png[test1]
 
 [#test2]
 .Resource monitoring
-image::../images/image2.png[test2]
+image::../docs/deployment_guide/images/image2.png[test2]
 
 [start=4]
 4. Disable read access for your Amazon S3 buckets.
 
 [#test3]
 .S3 buckets with public read access disabled
-image::../images/image3.png[test3]
+image::../docs/deployment_guide/images/image3.png[test3]

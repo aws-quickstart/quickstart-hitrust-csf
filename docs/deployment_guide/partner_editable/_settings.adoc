@@ -5,7 +5,7 @@
 // :partner-company-name: Example Company Name, Ltd.
 :doc-month: August
 :doc-year: 2023
-:partner-contributors: John Smith, {partner-company-name}
+// :partner-contributors: John Smith, {partner-company-name}
 // :other-contributors: Akua Mansa, Trek10
 :aws-contributors: AWS Healthcare and AWS Infrastructure & Automation teams
 // :aws-ia-contributors: Toni Jones, AWS Integration & Automation team
