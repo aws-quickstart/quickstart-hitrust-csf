@@ -1,0 +1,7 @@
+//Include any predeployment steps here, such as signing up for a Marketplace AMI or making any changes to a partner account. If there are no predeployment steps, leave this file empty.
+
+== Predeployment steps
+
+=== Prepare your AWS account
+
+To deploy this Partner Solution, you must have your own domain name, and it must be managed by Amazon Route 53.
