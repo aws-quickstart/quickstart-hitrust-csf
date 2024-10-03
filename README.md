@@ -1,4 +1,11 @@
-# quickstart-hitrust-csf
+
+## Deprecation Notice
+
+:x: This repository is subject to deprecation in Q4 2024. For more details, [please review this announcement](https://github.com/aws-ia/.announcements/issues/1). 
+
+
+## quickstart-hitrust-csf
+
 ## HITRUST on AWS
 
 This Quick Start deploys a model environment on the Amazon Web Services (AWS) Cloud that can help organizations with workloads that fall within the scope of the Health Information Trust Alliance Common Security Framework (HITRUST-CSF). Its architecture maps to certain technical requirements imposed by HITRUST controls.
